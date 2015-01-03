@@ -44,7 +44,7 @@ func main() {
 
 func init() {
 	// fmt.Println("pravasan init() it runs before other functions")
-	var un, pw, dbname, host, port string
+	var un, pw, dbname, host, port, prefix string
 	flag.StringVar(&un, "u", "", "specify the database username")
 	flag.StringVar(&pw, "p", "", "specify the database password")
 	flag.StringVar(&dbname, "d", "", "specify the database name")
