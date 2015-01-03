@@ -71,7 +71,7 @@ func datatype_conversion(dt string) string {
 	return dt
 }
 
-func ProcessNow(m m.Migration, updown string) {
+func ProcessNow(m m.Migration, mig m.UpDown) {
 	if m.Id <= getLastMigrationNo() {
 		return
 	} else {
@@ -80,35 +80,34 @@ func ProcessNow(m m.Migration, updown string) {
 	nid, _ := strconv.Atoi(m.Id)
 	if nid != 0 {
 		fmt.Println("ID : ", m.Id)
-
-		for _, v := range m.Up.Create_Table {
+		for _, v := range mig.Create_Table {
 			var values_array []string
 			for _, vv := range v.Columns {
 				values_array = append(values_array, "`"+vv.FieldName+"` "+datatype_conversion(vv.DataType))
 			}
 			CreateTable(v.Table_Name, values_array)
 		}
-		for _, v := range m.Up.Drop_Table {
+		for _, v := range mig.Drop_Table {
 			DropTable(v.Table_Name)
 		}
-		for _, v := range m.Up.Add_Column {
+		for _, v := range mig.Add_Column {
 			for _, vv := range v.Columns {
 				AddColumn(v.Table_Name, "`"+vv.FieldName+"` ", datatype_conversion(vv.DataType))
 			}
 		}
-		for _, v := range m.Up.Drop_Column {
+		for _, v := range mig.Drop_Column {
 			for _, vv := range v.Columns {
 				DropColumn(v.Table_Name, "`"+vv.FieldName+"` ")
 			}
 		}
-		for _, v := range m.Up.Add_Index {
+		for _, v := range mig.Add_Index {
 			var fieldname_array []string
 			for _, vv := range v.Columns {
 				fieldname_array = append(fieldname_array, "`"+vv.FieldName+"` ")
 			}
 			AddIndex(v.Table_Name, v.Index_Type, fieldname_array)
 		}
-		for _, v := range m.Up.Drop_Index {
+		for _, v := range mig.Drop_Index {
 			var fieldname_array []string
 			for _, vv := range v.Columns {
 				fieldname_array = append(fieldname_array, "`"+vv.FieldName+"` ")

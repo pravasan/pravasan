@@ -1,12 +1,14 @@
 package migration
 
 type Config struct {
-	Db_username   string
-	Db_password   string
-	Db_name       string
-	Db_hostname   string
-	Db_portnumber string
-	File_prefix   string
+	Db_username      string `xml:"Db_username,omitempty"json:"Db_username,omitempty"`
+	Db_password      string `xml:"Db_password,omitempty"json:"Db_password,omitempty"`
+	Db_name          string `xml:"Db_name,omitempty"json:"Db_name,omitempty"`
+	Db_hostname      string `xml:"Db_hostname,omitempty"json:"Db_hostname,omitempty"`
+	Db_portnumber    string `xml:"Db_portnumber,omitempty"json:"Db_portnumber,omitempty"`
+	File_prefix      string `xml:"File_prefix,omitempty"json:"File_prefix,omitempty"`
+	File_extension   string `xml:"File_extension,omitempty"json:"File_extension,omitempty"`
+	Migration_output string `xml:"Migration_output,omitempty"json:"Migration_output,omitempty"`
 }
 
 type Migration struct {

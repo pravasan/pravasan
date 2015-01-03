@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/howeyc/gopass"
+
 	m "github.com/pravasan/pravasan/migration"
 
 	gdm_my "github.com/pravasan/pravasan/mysql"
@@ -19,12 +21,13 @@ import (
 
 const FIELD_DATATYPE_REGEXP = `^([A-Za-z]{2,15}):([A-Za-z]{2,15})`
 
+var current_version = "0.1"
 var Config m.Config
 var ArgArr []string
 
 func main() {
-	if strings.LastIndex(os.Args[0], "pravasan") < 1 {
-		fmt.Println("wrong usage")
+	if strings.LastIndex(os.Args[0], "pravasan") < 1 || len(ArgArr) == 0 {
+		fmt.Println("wrong usage, or no arguments specified")
 		os.Exit(1)
 	}
 	switch ArgArr[0] {
@@ -42,23 +45,76 @@ func main() {
 	os.Exit(1)
 }
 
+func print_current_version() {
+	fmt.Println("pravasan " + current_version)
+}
 func init() {
 	// fmt.Println("pravasan init() it runs before other functions")
-	var un, pw, dbname, host, port, prefix string
+	if _, err := os.Stat("./pravasan.conf.json"); err == nil {
+		bs, err := ioutil.ReadFile("pravasan.conf.json")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		docScript := []byte(bs)
+		json.Unmarshal(docScript, &Config)
+		// fmt.Println("Conf file present & read")
+	}
+
+	var (
+		un string
+		// pw            string
+		dbname        string
+		host          string
+		port          string
+		prefix        string
+		extn          string
+		version       bool = false
+		flag_password bool = false
+	)
+
 	flag.StringVar(&un, "u", "", "specify the database username")
-	flag.StringVar(&pw, "p", "", "specify the database password")
+	flag.BoolVar(&flag_password, "p", false, "specify the option asking for database password")
 	flag.StringVar(&dbname, "d", "", "specify the database name")
 	flag.StringVar(&host, "h", "localhost", "specify the database hostname")
 	flag.StringVar(&port, "port", "5432", "specify the database port")
-	flag.StringVar(&prefix, "prefix", "", "specify the database port")
+	flag.StringVar(&prefix, "prefix", "", "specify the text to be prefix with the migration file")
+	flag.StringVar(&extn, "extn", "prvsn", "specify the migration file extension")
+	flag.BoolVar(&version, "version", false, "print Pravasan version")
 	flag.Parse()
-	Config.Db_username = un
-	Config.Db_password = pw
-	Config.Db_name = dbname
-	Config.Db_hostname = host
-	Config.Db_portnumber = port
-	Config.File_prefix = prefix
+
+	if version {
+		print_current_version()
+		if len(flag.Args()) == 0 {
+			os.Exit(1)
+		}
+	}
+
+	if un != "" {
+		Config.Db_username = un
+	}
+	if flag_password {
+		fmt.Printf("Enter DB Password : ")
+		pw := gopass.GetPasswd()
+		Config.Db_password = string(pw)
+	}
+	if dbname != "" {
+		Config.Db_name = dbname
+	}
+	if host != "" {
+		Config.Db_hostname = host
+	}
+	if port != "" {
+		Config.Db_portnumber = port
+	}
+	if prefix != "" {
+		Config.File_prefix = prefix
+	}
+	if extn != "" {
+		Config.File_extension = extn
+	}
 	ArgArr = flag.Args()
+
 }
 
 func createMigration() {
@@ -105,7 +161,7 @@ func generateMigration() {
 	fmt.Println(string(b))
 
 	// Write to a new File.
-	filename := mm.Id + ".rm.json"
+	filename := mm.Id + "." + Config.File_extension
 	file1, _ := os.Create(filename)
 	file1.Write(b)
 	file1.Close()
@@ -225,6 +281,10 @@ func fn_create_table(mm *m.UpDown) {
 }
 
 func migrateUpDown(updown string) {
+	var mig m.UpDown
+	if Config.Db_name == "" || Config.Db_username == "" {
+		fmt.Println("Either Database Name or Username is not mentioned ")
+	}
 	if files := JSONMigrationFiles(); 0 < len(files) {
 		for _, filename := range files {
 			fmt.Println("Executing ................ ", filename)
@@ -236,12 +296,17 @@ func migrateUpDown(updown string) {
 			docScript := []byte(bs)
 			var mm m.Migration
 			json.Unmarshal(docScript, &mm)
+			if updown == "up" {
+				mig = mm.Up
+			} else {
+				mig = mm.Down
+			}
 			a := "mysql"
 			if a == "mysql" {
 				gdm_my.Init(Config)
-				gdm_my.ProcessNow(mm, updown)
+				gdm_my.ProcessNow(mm, mig)
 			} else {
-				gdm_pq.ProcessNow(mm, updown)
+				gdm_pq.ProcessNow(mm, mig)
 			}
 			// if !ProcessNow(mm) {
 			// 	fmt.Println("Either the file is empty or not in a proper JSON Migration Format")
@@ -257,7 +322,7 @@ func JSONMigrationFiles() []string {
 	files, _ := ioutil.ReadDir("./")
 	var json_files []string
 	for _, f := range files {
-		if !f.IsDir() && strings.Contains(f.Name(), ".rm.json") {
+		if !f.IsDir() && strings.Contains(f.Name(), "."+Config.File_extension) {
 			json_files = append(json_files, f.Name())
 		}
 	}
