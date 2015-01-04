@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 	"sort"
@@ -305,12 +306,13 @@ func migrateUpDown(updown string) {
 	var processCount int = 0
 
 	// setting reverseCount
-	var reverseCount int = 0
+	var reverseCount int = 1
 	var err error
 	if len(ArgArr) > 1 && ArgArr[1] != "" {
 		reverseCount, err = strconv.Atoi(strings.Replace(ArgArr[1], "-", "", -1))
 		if err != nil {
-			reverseCount = 0
+			log.Println("Wrong count to be reversed, only integer values accepted")
+			log.Fatal(err)
 		}
 	}
 
