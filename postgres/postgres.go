@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,23 +14,46 @@ import (
 )
 
 var Db *sql.DB
+var working_version string
+var local_updown string
 
 func init() {
 	// fmt.Println("postgres init() it runs before other functions")
 }
 
-func Init() {
+func Init(c m.Config) {
 	fmt.Println("Inside the Postgres")
 	Db, _ = sql.Open("mysql", "root:root@/onetest")
+}
+
+func GetLastMigrationNo() string {
+	var max_version string = ""
+	query := "SELECT max(`version`) FROM `schema_migrations`"
+	q, err := Db.Query(query)
+	defer q.Close()
+	if err != nil {
+		log.Println("schema_migrations table doesn't exists")
+		log.Fatal(err)
+	} else {
+		q.Next()
+		q.Scan(&max_version)
+	}
+	return max_version
 }
 
 func CreateMigrationTable() {
 }
 
-func ProcessNow(m m.Migration, mig m.UpDown) {
-	nid, _ := strconv.Atoi(m.Id)
+func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
+	if updown == "up" && lm.Id <= GetLastMigrationNo() {
+		return
+	}
+	local_updown = updown
+
+	working_version = lm.Id
+	nid, _ := strconv.Atoi(lm.Id)
 	if nid != 0 {
-		fmt.Println("ID : ", m.Id)
+		fmt.Println("ID : ", lm.Id)
 
 		for _, v := range mig.Create_Table {
 			var values_array []string

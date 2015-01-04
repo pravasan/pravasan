@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,11 +20,15 @@ import (
 	gdm_pq "github.com/pravasan/pravasan/postgres"
 )
 
-const FIELD_DATATYPE_REGEXP = `^([A-Za-z]{2,15}):([A-Za-z]{2,15})`
+const (
+	FIELD_DATATYPE_REGEXP = `^([A-Za-z]{2,15}):([A-Za-z]{2,15})`
+	current_version       = "0.1"
+)
 
-var current_version = "0.1"
-var Config m.Config
-var ArgArr []string
+var (
+	Config m.Config
+	ArgArr []string
+)
 
 func main() {
 	if strings.LastIndex(os.Args[0], "pravasan") < 1 || len(ArgArr) == 0 {
@@ -46,7 +51,7 @@ func main() {
 }
 
 func print_current_version() {
-	fmt.Println("pravasan " + current_version)
+	fmt.Println("pravasan version " + current_version)
 }
 func init() {
 	// fmt.Println("pravasan init() it runs before other functions")
@@ -62,8 +67,8 @@ func init() {
 	}
 
 	var (
-		un string
-		// pw            string
+		db_type       string
+		un            string
 		dbname        string
 		host          string
 		port          string
@@ -73,6 +78,7 @@ func init() {
 		flag_password bool = false
 	)
 
+	flag.StringVar(&db_type, "db_type", "mysql", "specify the database type")
 	flag.StringVar(&un, "u", "", "specify the database username")
 	flag.BoolVar(&flag_password, "p", false, "specify the option asking for database password")
 	flag.StringVar(&dbname, "d", "", "specify the database name")
@@ -90,6 +96,9 @@ func init() {
 		}
 	}
 
+	if db_type != "" {
+		Config.Db_type = db_type
+	}
 	if un != "" {
 		Config.Db_username = un
 	}
@@ -118,12 +127,11 @@ func init() {
 }
 
 func createMigration() {
-	a := "mysql"
-	if a == "mysql" {
+	if Config.Db_type == "mysql" {
 		gdm_my.Init(Config)
 		gdm_my.CreateMigrationTable()
 	} else {
-		gdm_pq.Init()
+		gdm_pq.Init(Config)
 		gdm_pq.CreateMigrationTable()
 	}
 }
@@ -157,6 +165,8 @@ func generateMigration() {
 	default:
 		panic("No or wrong Actions provided.")
 	}
+
+	// Indenting the JSON format
 	b, _ := json.MarshalIndent(mm, " ", "  ")
 	fmt.Println(string(b))
 
@@ -280,45 +290,75 @@ func fn_create_table(mm *m.UpDown) {
 	mm.Create_Table = append(mm.Create_Table, ct)
 }
 
+// migrateUpDown - used to perform the Action Migration either Up or Down & chooses the DB too.
 func migrateUpDown(updown string) {
-	var mig m.UpDown
 	if Config.Db_name == "" || Config.Db_username == "" {
-		fmt.Println("Either Database Name or Username is not mentioned ")
+		fmt.Println("Either Database Name or Username is not mentioned, or both are missed to mention.")
 	}
-	if files := JSONMigrationFiles(); 0 < len(files) {
-		for _, filename := range files {
-			fmt.Println("Executing ................ ", filename)
-			bs, err := ioutil.ReadFile(filename)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			docScript := []byte(bs)
-			var mm m.Migration
-			json.Unmarshal(docScript, &mm)
-			if updown == "up" {
-				mig = mm.Up
-			} else {
-				mig = mm.Down
-			}
-			a := "mysql"
-			if a == "mysql" {
-				gdm_my.Init(Config)
-				gdm_my.ProcessNow(mm, mig)
-			} else {
-				gdm_pq.ProcessNow(mm, mig)
-			}
-			// if !ProcessNow(mm) {
-			// 	fmt.Println("Either the file is empty or not in a proper JSON Migration Format")
-			// 	// break
-			// }
-		}
-	} else {
+
+	files := JSONMigrationFiles(updown)
+	if 0 == len(files) {
 		fmt.Println("No files in the directory")
+		return
+	}
+
+	var processCount int = 0
+
+	// setting reverseCount
+	var reverseCount int = 0
+	var err error
+	if len(ArgArr) > 1 && ArgArr[1] != "" {
+		reverseCount, err = strconv.Atoi(strings.Replace(ArgArr[1], "-", "", -1))
+		if err != nil {
+			reverseCount = 0
+		}
+	}
+
+	for _, filename := range files {
+
+		// During migration down if count is reached then exit
+		if updown == "down" && reverseCount == processCount {
+			break
+		}
+
+		// Read the content of the file & store into the mm structure
+		bs, err := ioutil.ReadFile(filename)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		docScript := []byte(bs)
+
+		var (
+			mm  m.Migration
+			mig m.UpDown
+		)
+		json.Unmarshal(docScript, &mm)
+
+		if updown == "up" {
+			mig = mm.Up
+		} else {
+			mig = mm.Down
+		}
+
+		if Config.Db_type == "mysql" {
+			gdm_my.Init(Config)
+			if updown == "down" && mm.Id > gdm_my.GetLastMigrationNo() {
+				continue
+			}
+			gdm_my.ProcessNow(mm, mig, updown)
+		} else {
+			gdm_pq.Init(Config)
+			if updown == "down" && mm.Id > gdm_my.GetLastMigrationNo() {
+				continue
+			}
+			gdm_pq.ProcessNow(mm, mig, updown)
+		}
+		processCount++
 	}
 }
 
-func JSONMigrationFiles() []string {
+func JSONMigrationFiles(updown string) []string {
 	files, _ := ioutil.ReadDir("./")
 	var json_files []string
 	for _, f := range files {
@@ -326,6 +366,11 @@ func JSONMigrationFiles() []string {
 			json_files = append(json_files, f.Name())
 		}
 	}
-	sort.Strings(json_files)
+
+	if updown == "down" {
+		sort.Sort(sort.Reverse(sort.StringSlice(json_files)))
+	} else {
+		sort.Strings(json_files)
+	}
 	return json_files
 }

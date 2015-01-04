@@ -1,6 +1,7 @@
 package migration
 
 type Config struct {
+	Db_type          string `xml:"Db_type,omitempty"json:"Db_type,omitempty"`
 	Db_username      string `xml:"Db_username,omitempty"json:"Db_username,omitempty"`
 	Db_password      string `xml:"Db_password,omitempty"json:"Db_password,omitempty"`
 	Db_name          string `xml:"Db_name,omitempty"json:"Db_name,omitempty"`

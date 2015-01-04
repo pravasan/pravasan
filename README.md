@@ -31,17 +31,18 @@ pravasan add add_column test123 id:int
 pravasan add drop_column test123 id
 
 pravasan up
+pravasan down [-1]
 ```
 
 Work in progress are:
 ----
+* Fix _ in field names 
 * Reading Conf file
 * Creating Conf file
 ```
 pravasan add sql 
 pravasan add rename_table old_test123 new_test123
 pravasan add add_index test123 id name
-pravasan down [-1]
 ```
 
 Few Notes: 

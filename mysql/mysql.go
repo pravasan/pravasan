@@ -14,7 +14,8 @@ import (
 )
 
 var Db *sql.DB
-var new_version string
+var working_version string
+var local_updown string
 
 func init() {
 	// This can be useful to check for version and any other dependencies etc.,
@@ -25,7 +26,7 @@ func Init(c m.Config) {
 	Db, _ = sql.Open("mysql", c.Db_username+":"+c.Db_password+"@/"+c.Db_name)
 }
 
-func getLastMigrationNo() string {
+func GetLastMigrationNo() string {
 	var max_version string = ""
 	query := "SELECT max(`version`) FROM `schema_migrations`"
 	q, err := Db.Query(query)
@@ -52,7 +53,12 @@ func CreateMigrationTable() {
 }
 
 func updateMigrationTable() {
-	query := "INSERT INTO `schema_migrations`(version) VALUES ('" + new_version + "')"
+	var query string
+	if local_updown == "up" {
+		query = "INSERT INTO `schema_migrations`(version) VALUES ('" + working_version + "')"
+	} else {
+		query = "DELETE FROM `schema_migrations` WHERE version='" + working_version + "'"
+	}
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -71,33 +77,34 @@ func datatype_conversion(dt string) string {
 	return dt
 }
 
-func ProcessNow(m m.Migration, mig m.UpDown) {
-	if m.Id <= getLastMigrationNo() {
+func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
+	if updown == "up" && lm.Id <= GetLastMigrationNo() {
 		return
-	} else {
-		new_version = m.Id
 	}
-	nid, _ := strconv.Atoi(m.Id)
+	local_updown = updown
+
+	working_version = lm.Id
+	nid, _ := strconv.Atoi(lm.Id)
 	if nid != 0 {
-		fmt.Println("ID : ", m.Id)
+		fmt.Println("Executing ID : ", lm.Id)
 		for _, v := range mig.Create_Table {
 			var values_array []string
 			for _, vv := range v.Columns {
 				values_array = append(values_array, "`"+vv.FieldName+"` "+datatype_conversion(vv.DataType))
 			}
-			CreateTable(v.Table_Name, values_array)
+			CreateTable("`"+v.Table_Name+"`", values_array)
 		}
 		for _, v := range mig.Drop_Table {
-			DropTable(v.Table_Name)
+			DropTable("`" + v.Table_Name + "`")
 		}
 		for _, v := range mig.Add_Column {
 			for _, vv := range v.Columns {
-				AddColumn(v.Table_Name, "`"+vv.FieldName+"` ", datatype_conversion(vv.DataType))
+				AddColumn("`"+v.Table_Name+"`", "`"+vv.FieldName+"` ", datatype_conversion(vv.DataType))
 			}
 		}
 		for _, v := range mig.Drop_Column {
 			for _, vv := range v.Columns {
-				DropColumn(v.Table_Name, "`"+vv.FieldName+"` ")
+				DropColumn("`"+v.Table_Name+"`", "`"+vv.FieldName+"` ")
 			}
 		}
 		for _, v := range mig.Add_Index {
@@ -105,15 +112,16 @@ func ProcessNow(m m.Migration, mig m.UpDown) {
 			for _, vv := range v.Columns {
 				fieldname_array = append(fieldname_array, "`"+vv.FieldName+"` ")
 			}
-			AddIndex(v.Table_Name, v.Index_Type, fieldname_array)
+			AddIndex("`"+v.Table_Name+"`", v.Index_Type, fieldname_array)
 		}
 		for _, v := range mig.Drop_Index {
 			var fieldname_array []string
 			for _, vv := range v.Columns {
 				fieldname_array = append(fieldname_array, "`"+vv.FieldName+"` ")
 			}
-			DropIndex(v.Table_Name, v.Index_Type, fieldname_array)
+			DropIndex("`"+v.Table_Name+"`", v.Index_Type, fieldname_array)
 		}
+		updateMigrationTable()
 	}
 }
 
@@ -122,8 +130,6 @@ func execQuery(query string) {
 	q, err := Db.Query(query)
 	if err != nil {
 		log.Fatal(err)
-	} else {
-		updateMigrationTable()
 	}
 	defer q.Close()
 }
