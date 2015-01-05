@@ -108,14 +108,14 @@
 							<p>Below are the simple commands which will help you to create the migration file in JSON format.</p>
 
 							<pre style="font-family:Menlo, Monaco, Consolas, 'Courier New', monospace;font-size:12px;padding:5px;margin:0px;background:#C0C0C0;text-align:left;">
-$ pravasan add create_table test123 id:int name:string order:int status:bool    # Create JSON Migration File for TABLE Creation
-$ pravasan add add_column test123 id:int     # Create JSON Migration file containing Add Column syntax
-$ pravasan add drop_column test123 id        # Create JSON Migration file having Drop Column syntax 
-$ pravasan create                            # Create `schema_migrations` table
+$ ./pravasan add create_table test123 id:int name:string order:int status:bool    # Create JSON Migration File for TABLE Creation
+$ ./pravasan add add_column test123 id:int     # Create JSON Migration file containing Add Column syntax
+$ ./pravasan add drop_column test123 id        # Create JSON Migration file having Drop Column syntax 
+$ ./pravasan create                            # Create `schema_migrations` table
 
-$ pravasan up                                # Execute migration files which is not been executed.
+$ ./pravasan up                                # Execute migration files which is not been executed.
 
-$ pravasan down [-1]                         # Revert Migration file which is been executed already.
+$ ./pravasan down [-1]                         # Revert Migration file which is been executed already.
 							</pre>
 
 						</div>
