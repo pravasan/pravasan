@@ -1,18 +1,8 @@
 @charset 'UTF-8';
-@import url("font-awesome.min.css");
+/*@import url("font-awesome.min.css");*/
 @import url("http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,300italic,400,600");
 @import url(http://fonts.googleapis.com/css?family=Play);
 @import url(http://fonts.googleapis.com/css?family=Play:400,700);
-/*
-	Prologue by HTML5 UP
-	html5up.net | @n33co
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
-*/
-
-/*********************************************************************************/
-/* Basic                                                                         */
-/*********************************************************************************/
-
 	body
 	{
 		background: #fff;
