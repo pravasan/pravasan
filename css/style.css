@@ -790,5 +790,7 @@
 		
 			#main > section.four
 			{
-				background-color: #e8edec;
+				color:black;
+				/*background-color: #e8edec;*/
+				text-align: left;
 			}

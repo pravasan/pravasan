@@ -1,12 +1,7 @@
 <!DOCTYPE HTML>
-<!--
-	Prologue by HTML5 UP
-	html5up.net | @n33co
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
 <html>
 	<head>
-		<title>Prologue by HTML5 UP</title>
+		<title>Pravasan - Simple Migration Tool</title>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		<meta name="description" content="" />
 		<meta name="keywords" content="" />
@@ -34,7 +29,7 @@
 
 					<!-- Logo -->
 						<div id="logo">
-							<span class="image avatar48"><img src="images/avatar.jpg" alt="" /></span>
+							<span class="fa fa-caret-square-o-right fa-3x image">&nbsp;</span>
 							<h1 id="title">Pravasan</h1>
 <!-- 							<p>Hyperspace Engineer</p> -->
 						</div>
@@ -56,9 +51,9 @@
 							-->
 							<ul>
 								<li><a href="#top" id="top-link" class="skel-layers-ignoreHref"><span class="icon fa-home">Home</span></a></li>
-								<li><a href="#portfolio" id="portfolio-link" class="skel-layers-ignoreHref"><span class="icon fa-th">Usage</span></a></li>
-								<li><a href="#about" id="about-link" class="skel-layers-ignoreHref"><span class="icon fa-user">Download</span></a></li>
-								<li><a href="#contact" id="contact-link" class="skel-layers-ignoreHref"><span class="icon fa-envelope">About Me / Contact</span></a></li>
+								<li><a href="#usage" id="usage-link" class="skel-layers-ignoreHref"><span class="icon fa-th">Usage</span></a></li>
+								<li><a href="#download" id="download-link" class="skel-layers-ignoreHref"><span class="icon fa-user">Download</span></a></li>
+								<li><a href="#contact" id="contact-link" class="skel-layers-ignoreHref"><span class="icon fa-envelope">Contact</span></a></li>
 							</ul>
 						</nav>
 						
@@ -72,7 +67,7 @@
 							<!-- <li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li> -->
 							<li><a href="https://github.com/pravasan/pravasan" class="icon fa-github"><span class="label">Github</span></a></li>
 							<!-- <li><a href="#" class="icon fa-dribbble"><span class="label">Dribbble</span></a></li> -->
-							<li><a href="MAILTO:kishorevaishnav@gmail.com" class="icon fa-envelope"><span class="label">Email</span></a></li>
+							<li><a href="MAILTO:kishorevaishnav@gmail.com?subject=prAvAsAn.github.io" class="icon fa-envelope"><span class="label">Email</span></a></li>
 						</ul>
 				
 				</div>
@@ -94,124 +89,91 @@
 							</header>
 							
 							<footer>
-								<a href="#portfolio" class="button scrolly">Try it</a>
+								<a href="#usage" class="button scrolly">Try it</a>
 							</footer>
 							<div style="font-size:15px;text-align:left;color:white"><br/><br/> &nbsp; <sup>*</sup> Currently only available for MySQL. <a href="https://github.com/pravasan/pravasan#pravasan">Check Here</a> if your database is in our pipeline.</div>
 
 						</div>
 						</section>
 					
-				<!-- Portfolio -->
-					<section id="portfolio" class="two">
+				<!-- Usage -->
+					<section id="usage" class="two">
 						<div class="container">
 					
 							<header>
-								<h2>Portfolio</h2>
+								<h2>Usage</h2>
 							</header>
 							
-							<p>Vitae natoque dictum etiam semper magnis enim feugiat convallis convallis
-							egestas rhoncus ridiculus in quis risus amet curabitur tempor orci penatibus.
-							Tellus erat mauris ipsum fermentum etiam vivamus eget. Nunc nibh morbi quis 
-							fusce hendrerit lacus ridiculus.</p>
-						
-							<div class="row">
-								<div class="4u">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>
-										<header>
-											<h3>Ipsum Feugiat</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic03.jpg" alt="" /></a>
-										<header>
-											<h3>Rhoncus Semper</h3>
-										</header>
-									</article>
-								</div>
-								<div class="4u">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a>
-										<header>
-											<h3>Magna Nullam</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a>
-										<header>
-											<h3>Natoque Vitae</h3>
-										</header>
-									</article>
-								</div>
-								<div class="4u">
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a>
-										<header>
-											<h3>Dolor Penatibus</h3>
-										</header>
-									</article>
-									<article class="item">
-										<a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a>
-										<header>
-											<h3>Orci Convallis</h3>
-										</header>
-									</article>
-								</div>
-							</div>
+							<p>Below are the simple commands which will help you to create the migration file in JSON format.</p>
+
+							<pre style="font-family:Menlo, Monaco, Consolas, 'Courier New', monospace;font-size:12px;padding:5px;margin:0px;background:#C0C0C0;text-align:left;">
+$ pravasan add create_table test123 id:int name:string order:int status:bool    # Create JSON Migration File for TABLE Creation
+$ pravasan add add_column test123 id:int     # Create JSON Migration file containing Add Column syntax
+$ pravasan add drop_column test123 id        # Create JSON Migration file having Drop Column syntax 
+$ pravasan create                            # Create `schema_migrations` table
+
+$ pravasan up                                # Execute migration files which is not been executed.
+
+$ pravasan down [-1]                         # Revert Migration file which is been executed already.
+							</pre>
 
 						</div>
 					</section>
 
-				<!-- About Me -->
-					<section id="about" class="three">
+				<!-- Download -->
+					<section id="download" class="three" style="background-color:white;">
 						<div class="container">
-
 							<header>
-								<h2>About Me</h2>
+								<h2>Download</h2>
 							</header>
-
-							<a href="#" class="image featured"><img src="images/pic08.jpg" alt="" /></a>
-							
-							<p>Tincidunt eu elit diam magnis pretium accumsan etiam id urna. Ridiculus 
-							ultricies curae quis et rhoncus velit. Lobortis elementum aliquet nec vitae 
-							laoreet eget cubilia quam non etiam odio tincidunt montes. Elementum sem 
-							parturient nulla quam placerat viverra mauris non cum elit tempus ullamcorper 
-							dolor. Libero rutrum ut lacinia donec curae mus vel quisque sociis nec 
-							ornare iaculis.</p>
-
+							<br/>
+							<br/>
+							<div class="row">
+								<div class="4u">
+									<article class="item">
+										<a href="#" class="image fit fa fa-windows fa-5x" style="padding:15px;">
+										&nbsp;</a>
+										<header>
+											<h3>Windows XP, Vista, 7 & 8</h3>
+										</header>
+									</article>
+								</div>
+								<div class="4u">
+									<article class="item">
+										<a href="#" class="image fit fa fa-apple fa-5x" style="padding:15px;">&nbsp;</a>
+										<header>
+											<h3>OS X Leopard, SL, Lion, ML & Mavericks</h3>
+										</header>
+									</article>
+								</div>
+								<div class="4u">
+									<article class="item">
+										<a href="#" class="image fit fa fa-linux fa-5x" style="padding:15px;">&nbsp;</a>
+										<header>
+											<h3>Linux</h3>
+										</header>
+									</article>
+								</div>
+							</div>
+							<br/>
 						</div>
+							<br/>
 					</section>
 			
 				<!-- Contact -->
 					<section id="contact" class="four">
 						<div class="container">
-
 							<header>
 								<h2>Contact</h2>
 							</header>
 
-							<p>Elementum sem parturient nulla quam placerat viverra 
-							mauris non cum elit tempus ullamcorper dolor. Libero rutrum ut lacinia 
-							donec curae mus. Eleifend id porttitor ac ultricies lobortis sem nunc 
-							orci ridiculus faucibus a consectetur. Porttitor curae mauris urna mi dolor.</p>
-							
-							<form method="post" action="#">
-								<div class="row 50%">
-									<div class="6u"><input type="text" name="name" placeholder="Name" /></div>
-									<div class="6u"><input type="text" name="email" placeholder="Email" /></div>
-								</div>
-								<div class="row 50%">
-									<div class="12u">
-										<textarea name="message" placeholder="Message"></textarea>
-									</div>
-								</div>
-								<div class="row">
-									<div class="12u">
-										<input type="submit" value="Send Message" />
-									</div>
-								</div>
-							</form>
+							<p>Get in touch any time.</p>
 
+							<p>If you have any issues regarding the application, please feel free to raise bugs <a href="https://github.com/pravasan/pravasan/issues">here</a></p>
+
+							<p>You are also most welcome to give feedback, post your reviews, critize the application / code, etc., <a href="https://github.com/pravasan/pravasan/issues">here</a></p>
+							
+							<p><a href="https://github.com/pravasan/pravasan">Star</a> it, <a href="https://github.com/pravasan/pravasan/fork">Fork</a> it, etc., </p> 
 						</div>
 					</section>
 			
