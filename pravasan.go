@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	FIELD_DATATYPE_REGEXP = `^([A-Za-z]{2,15}):([A-Za-z]{2,15})`
+	FIELD_DATATYPE_REGEXP = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
 	current_version       = "0.1"
 )
 
