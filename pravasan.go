@@ -44,11 +44,34 @@ func main() {
 	case "down", "d":
 		migrateUpDown("down")
 	case "create", "c":
-		createMigration()
+		if len(ArgArr) > 1 && ArgArr[1] != "" && ArgArr[1] == "conf" {
+			createConfigurationFile()
+		} else {
+			createMigration()
+		}
 	default:
 		panic("No or Wrong Actions provided.")
 	}
 	os.Exit(1)
+}
+
+func createConfigurationFile() {
+	writeToFile("pravasan.conf.json", Config, "JSON")
+}
+
+func writeToFile(filename string, obj interface{}, format string) {
+	var content []byte
+	if format == "JSON" {
+		// Indenting the JSON format
+		content, _ = json.MarshalIndent(obj, " ", "  ")
+	} else {
+		return
+	}
+
+	// Write to a new File.
+	file, _ := os.Create(filename)
+	file.Write(content)
+	file.Close()
 }
 
 func print_current_version() {
@@ -167,15 +190,7 @@ func generateMigration() {
 		panic("No or wrong Actions provided.")
 	}
 
-	// Indenting the JSON format
-	b, _ := json.MarshalIndent(mm, " ", "  ")
-	fmt.Println(string(b))
-
-	// Write to a new File.
-	filename := mm.Id + "." + Config.File_extension
-	file1, _ := os.Create(filename)
-	file1.Write(b)
-	file1.Close()
+	writeToFile(mm.Id+"."+Config.File_extension, mm, "JSON")
 
 	os.Exit(1)
 }
