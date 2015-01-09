@@ -9,11 +9,14 @@ Definition in Hindi
 ----
 प्रवसन {pravasan} = MIGRATION(Noun)
 
-* Install
-* Usage
+* [Install](#install)
+* [Usage](#usage)
+* [High Level Features](#high-level-features)
+* [All Features / Bugs](#all-features--bugs)
 
 Install
 -------
+(in progressssss......)
 
 Usage
 -----
@@ -30,6 +33,12 @@ Usage of pravasan:
   -prefix="": specify the text to be prefix with the migration file
   -u="": specify the database username
   -version=false: print Pravasan version
+```
+
+To create the configuration file use either of the below commands & pravasan.conf.json / pravasan.conf.xml will be created
+```
+pravasan -u="root" -p -d="testdb" -h="localhost" -port="5433" create conf 
+pravasan -u="root" -p -d="testdb" -h="localhost" -port="5433" -output="xml" create conf 
 ```
 
 Assuming the pravasan.conf.json file is set already
@@ -53,12 +62,19 @@ pravasan add add_index test123 id name
 * Creating Conf file
 * Support for Postgres, SQLite, Oracle, MongoDB, etc.,
 
-Planning for v0.5
+High Level Features
 ----
+- [x] Output in XML, JSON format
+- [x] Support for MySQL
+- [x] Create & read from Conf file (XML / JSON)
 
-Planning for v1.0
-----
-Transactional Support
+All Features / Bugs
+========
+- [ ] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)
+- [ ] [v0.2](https://github.com/pravasan/pravasan/milestones/v0.2)
+- [ ] [v0.3](https://github.com/pravasan/pravasan/milestones/v0.3)
+- [ ] [v1.0](https://github.com/pravasan/pravasan/milestones/v1.0)
+- [ ] [v2.0](https://github.com/pravasan/pravasan/milestones/v2.0)
 
 Few Notes: 
 * moved from https://github.com/kishorevaishnav/godbmig

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -56,30 +57,15 @@ func main() {
 }
 
 func createConfigurationFile() {
-	writeToFile("pravasan.conf.json", Config, "JSON")
+	writeToFile("pravasan.conf."+Config.Migration_output, Config, Config.Migration_output)
+	fmt.Println("Config file created / updated.")
 }
 
-func writeToFile(filename string, obj interface{}, format string) {
-	var content []byte
-	if format == "JSON" {
-		// Indenting the JSON format
-		content, _ = json.MarshalIndent(obj, " ", "  ")
-	} else {
-		return
-	}
-
-	// Write to a new File.
-	file, _ := os.Create(filename)
-	file.Write(content)
-	file.Close()
-}
-
-func print_current_version() {
-	fmt.Println("pravasan version " + current_version)
-}
 func init() {
+	var current_conf_file_format string = "json"
 	// fmt.Println("pravasan init() it runs before other functions")
 	if _, err := os.Stat("./pravasan.conf.json"); err == nil {
+		current_conf_file_format = "json"
 		bs, err := ioutil.ReadFile("pravasan.conf.json")
 		if err != nil {
 			fmt.Println(err)
@@ -87,7 +73,15 @@ func init() {
 		}
 		docScript := []byte(bs)
 		json.Unmarshal(docScript, &Config)
-		// fmt.Println("Conf file present & read")
+	} else if _, err := os.Stat("./pravasan.conf.xml"); err == nil {
+		current_conf_file_format = "xml"
+		bs, err := ioutil.ReadFile("pravasan.conf.xml")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		docScript := []byte(bs)
+		xml.Unmarshal(docScript, &Config)
 	}
 
 	var (
@@ -98,6 +92,7 @@ func init() {
 		port          string
 		prefix        string
 		extn          string
+		output        string
 		version       bool = false
 		flag_password bool = false
 	)
@@ -111,10 +106,11 @@ func init() {
 	flag.StringVar(&prefix, "prefix", "", "specify the text to be prefix with the migration file")
 	flag.StringVar(&extn, "extn", "prvsn", "specify the migration file extension")
 	flag.BoolVar(&version, "version", false, "print Pravasan version")
+	flag.StringVar(&output, "output", current_conf_file_format, "supported format are json, xml")
 	flag.Parse()
 
 	if version {
-		print_current_version()
+		printCurrentVersion()
 		if len(flag.Args()) == 0 {
 			os.Exit(1)
 		}
@@ -145,6 +141,9 @@ func init() {
 	}
 	if extn != "" {
 		Config.File_extension = extn
+	}
+	if output != "" {
+		Config.Migration_output = strings.ToLower(output)
 	}
 	ArgArr = flag.Args()
 
@@ -190,7 +189,7 @@ func generateMigration() {
 		panic("No or wrong Actions provided.")
 	}
 
-	writeToFile(mm.Id+"."+Config.File_extension, mm, "JSON")
+	writeToFile(mm.Id+"."+Config.File_extension, mm, Config.Migration_output)
 
 	os.Exit(1)
 }
@@ -390,4 +389,26 @@ func JSONMigrationFiles(updown string) []string {
 		sort.Strings(json_files)
 	}
 	return json_files
+}
+
+func writeToFile(filename string, obj interface{}, format string) {
+	var content []byte
+	if format == "json" {
+		// Indenting the JSON format
+		content, _ = json.MarshalIndent(obj, " ", "  ")
+	} else if format == "xml" {
+		// Indenting the XML format
+		content, _ = xml.MarshalIndent(obj, " ", "  ")
+	} else {
+		return
+	}
+
+	// Write to a new File.
+	file, _ := os.Create(filename)
+	file.Write(content)
+	file.Close()
+}
+
+func printCurrentVersion() {
+	fmt.Println("pravasan version " + current_version)
 }
