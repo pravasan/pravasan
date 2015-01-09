@@ -25,6 +25,7 @@ import (
 const (
 	FIELD_DATATYPE_REGEXP = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
 	current_version       = "0.1"
+	layout                = "20060102150405"
 )
 
 var (
@@ -160,7 +161,6 @@ func createMigration() {
 }
 
 func generateMigration() {
-	const layout = "20060102150405"
 	t := time.Now()
 	mm := m.Migration{}
 	mm.Id = Config.File_prefix + t.Format(layout)
@@ -189,7 +189,7 @@ func generateMigration() {
 		panic("No or wrong Actions provided.")
 	}
 
-	writeToFile(mm.Id+"."+Config.File_extension, mm, Config.Migration_output)
+	writeToFile(mm.Id+"."+Config.Migration_output+"."+Config.File_extension, mm, Config.Migration_output)
 
 	os.Exit(1)
 }
@@ -311,7 +311,7 @@ func migrateUpDown(updown string) {
 		fmt.Println("Either Database Name or Username is not mentioned, or both are missed to mention.")
 	}
 
-	files := JSONMigrationFiles(updown)
+	files := migrationFiles(updown)
 	if 0 == len(files) {
 		fmt.Println("No files in the directory")
 		return
@@ -349,7 +349,12 @@ func migrateUpDown(updown string) {
 			mm  m.Migration
 			mig m.UpDown
 		)
-		json.Unmarshal(docScript, &mm)
+
+		if Config.Migration_output == "json" {
+			json.Unmarshal(docScript, &mm)
+		} else {
+			xml.Unmarshal(docScript, &mm)
+		}
 
 		if updown == "up" {
 			mig = mm.Up
@@ -374,21 +379,21 @@ func migrateUpDown(updown string) {
 	}
 }
 
-func JSONMigrationFiles(updown string) []string {
-	files, _ := ioutil.ReadDir("./")
-	var json_files []string
+func migrationFiles(updown string) []string {
+	files, _ := ioutil.ReadDir("./*.json.prvsn")
+	var onlyMigFiles []string
 	for _, f := range files {
-		if !f.IsDir() && strings.Contains(f.Name(), "."+Config.File_extension) {
-			json_files = append(json_files, f.Name())
+		if !f.IsDir() && strings.Contains(f.Name(), "."+Config.Migration_output+"."+Config.File_extension) {
+			onlyMigFiles = append(onlyMigFiles, f.Name())
 		}
 	}
 
 	if updown == "down" {
-		sort.Sort(sort.Reverse(sort.StringSlice(json_files)))
+		sort.Sort(sort.Reverse(sort.StringSlice(onlyMigFiles)))
 	} else {
-		sort.Strings(json_files)
+		sort.Strings(onlyMigFiles)
 	}
-	return json_files
+	return onlyMigFiles
 }
 
 func writeToFile(filename string, obj interface{}, format string) {
