@@ -28,6 +28,8 @@ Usage of pravasan:
   -dbType="mysql": specify the database type
   -extn="prvsn": specify the migration file extension
   -h="localhost": specify the database hostname
+  -migration_table_name="schema_migrations": supported format are json, xml
+  -output="json": supported format are json, xml
   -p=false: specify the option asking for database password
   -port="5432": specify the database port
   -prefix="": specify the text to be prefix with the migration file

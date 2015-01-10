@@ -2,15 +2,16 @@ package migration
 
 // Config used for general configuration settings for Migration application
 type Config struct {
-	DbType          string `xml:"DbType,omitempty" json:"DbType,omitempty"`
-	DbUsername      string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
-	DbPassword      string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`
-	DbName          string `xml:"DbName,omitempty" json:"DbName,omitempty"`
-	DbHostname      string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
-	DbPortnumber    string `xml:"DbPortnumber,omitempty" json:"DbPortnumber,omitempty"`
-	FilePrefix      string `xml:"FilePrefix,omitempty" json:"FilePrefix,omitempty"`
-	FileExtension   string `xml:"FileExtension,omitempty" json:"FileExtension,omitempty"`
-	MigrationOutput string `xml:"MigrationOutput,omitempty" json:"MigrationOutput,omitempty"`
+	DbType             string `xml:"DbType,omitempty" json:"DbType,omitempty"`
+	DbUsername         string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
+	DbPassword         string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`
+	DbName             string `xml:"DbName,omitempty" json:"DbName,omitempty"`
+	DbHostname         string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
+	DbPortnumber       string `xml:"DbPortnumber,omitempty" json:"DbPortnumber,omitempty"`
+	FilePrefix         string `xml:"FilePrefix,omitempty" json:"FilePrefix,omitempty"`
+	FileExtension      string `xml:"FileExtension,omitempty" json:"FileExtension,omitempty"`
+	MigrationOutput    string `xml:"MigrationOutput,omitempty" json:"MigrationOutput,omitempty"`
+	MigrationTableName string `xml:"MigrationTableName,omitempty" json:"MigrationTableName,omitempty"`
 }
 
 // Migration structure is combination of Up / Down structure.

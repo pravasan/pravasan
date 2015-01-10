@@ -59,7 +59,7 @@ func main() {
 }
 
 func createConfigurationFile() {
-	writeToFile("pravasan.conf."+config.MigrationOutput, Config, config.MigrationOutput)
+	writeToFile("pravasan.conf."+config.MigrationOutput, config, config.MigrationOutput)
 	fmt.Println("Config file created / updated.")
 }
 
@@ -74,7 +74,7 @@ func init() {
 			return
 		}
 		docScript := []byte(bs)
-		json.Unmarshal(docScript, &Config)
+		json.Unmarshal(docScript, &config)
 	} else if _, err := os.Stat("./pravasan.conf.xml"); err == nil {
 		currentConfFileFormat = "xml"
 		bs, err := ioutil.ReadFile("pravasan.conf.xml")
@@ -83,32 +83,34 @@ func init() {
 			return
 		}
 		docScript := []byte(bs)
-		xml.Unmarshal(docScript, &Config)
+		xml.Unmarshal(docScript, &config)
 	}
 
 	var (
-		dbType       string
-		un           string
-		dbname       string
-		host         string
-		port         string
-		prefix       string
-		extn         string
-		output       string
-		version      = false
-		flagPassword = false
+		dbname             string
+		dbType             string
+		extn               string
+		flagPassword       = false
+		host               string
+		migrationTableName string
+		output             string
+		port               string
+		prefix             string
+		un                 string
+		version            = false
 	)
 
-	flag.StringVar(&dbType, "dbType", "mysql", "specify the database type")
-	flag.StringVar(&un, "u", "", "specify the database username")
 	flag.BoolVar(&flagPassword, "p", false, "specify the option asking for database password")
+	flag.BoolVar(&version, "version", false, "print Pravasan version")
 	flag.StringVar(&dbname, "d", "", "specify the database name")
+	flag.StringVar(&dbType, "dbType", "mysql", "specify the database type")
+	flag.StringVar(&extn, "extn", "prvsn", "specify the migration file extension")
 	flag.StringVar(&host, "h", "localhost", "specify the database hostname")
+	flag.StringVar(&migrationTableName, "migration_table_name", "schema_migrations", "supported format are json, xml")
+	flag.StringVar(&output, "output", currentConfFileFormat, "supported format are json, xml")
 	flag.StringVar(&port, "port", "5432", "specify the database port")
 	flag.StringVar(&prefix, "prefix", "", "specify the text to be prefix with the migration file")
-	flag.StringVar(&extn, "extn", "prvsn", "specify the migration file extension")
-	flag.BoolVar(&version, "version", false, "print Pravasan version")
-	flag.StringVar(&output, "output", currentConfFileFormat, "supported format are json, xml")
+	flag.StringVar(&un, "u", "", "specify the database username")
 	flag.Parse()
 
 	if version {
@@ -147,16 +149,19 @@ func init() {
 	if output != "" {
 		config.MigrationOutput = strings.ToLower(output)
 	}
+	if migrationTableName != "" {
+		config.MigrationTableName = strings.ToLower(migrationTableName)
+	}
 	argArray = flag.Args()
 
 }
 
 func createMigration() {
 	if config.DbType == "mysql" {
-		gdm_my.Init(Config)
+		gdm_my.Init(config)
 		gdm_my.CreateMigrationTable()
 	} else {
-		gdm_pq.Init(Config)
+		gdm_pq.Init(config)
 		gdm_pq.CreateMigrationTable()
 	}
 }
@@ -364,13 +369,13 @@ func migrateUpDown(updown string) {
 		}
 
 		if config.DbType == "mysql" {
-			gdm_my.Init(Config)
+			gdm_my.Init(config)
 			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
 				continue
 			}
 			gdm_my.ProcessNow(mm, mig, updown)
 		} else {
-			gdm_pq.Init(Config)
+			gdm_pq.Init(config)
 			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
 				continue
 			}
