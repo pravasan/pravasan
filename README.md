@@ -24,16 +24,19 @@ Simple Migration tool intend to be used for any languages, for any db.
 ###Flags
 ```
 Usage of pravasan:
-  -d="": specify the database name
-  -dbType="mysql": specify the database type
-  -extn="prvsn": specify the migration file extension
-  -h="localhost": specify the database hostname
-  -migration_table_name="schema_migrations": supported format are json, xml
-  -output="json": supported format are json, xml
-  -p=false: specify the option asking for database password
-  -port="5432": specify the database port
-  -prefix="": specify the text to be prefix with the migration file
-  -u="": specify the database username
+  -confOutput="json": config file format: json, xml
+  -d="": database name
+  -dbType="mysql": database type
+  -h="localhost": database hostname
+  -indexPrefix="idx": prefix for creating Indexes
+  -indexSuffix="": suffix for creating Indexes
+  -migFileExtn="prvsn": migration file extension
+  -migFilePrefix="": prefix for migration file
+  -migOutput="json": current supported format: json, xml
+  -migTableName="schema_migrations": migration table name
+  -p=false: database password
+  -port="5432": database port
+  -u="": database username
   -version=false: print Pravasan version
 ```
 
@@ -43,29 +46,34 @@ pravasan -u="root" -p -dbType="mysql" -d="testdb" -h="localhost" -port="5433" cr
 pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 -output=xml create conf 
 ```
 
-Assuming the pravasan.conf.json file is set already
+Assuming the pravasan.conf.json or pravasan.conf.xml file is set already
 ```
-pravasan add create_table test123 id:int name:string order:int status:bool
 pravasan add add_column test123 id:int
+pravasan add add_index test123 id order name
+pravasan add create_table test123 id:int name:string order:int status:bool
 pravasan add drop_column test123 id
+pravasan add sql               # to add SQL statements directly.
 
-pravasan up
 pravasan down [-1]
-pravasan add sql 
+pravasan up
+```
+
+If you like not to store the credentials in file then use it like this
+```
+pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 add add_column test123 id:int
 ```
 
 ##Work in progress are:
 ```
 pravasan add rename_table old_test123 new_test123
-pravasan add add_index test123 id name
 ```
 * Support for SQLite, Oracle, MongoDB, etc.,
 
 ##High Level Features
-- [x] Output in XML, JSON format
-- [x] Support for MySQL, Postgres
 - [x] Create & read from Conf file (XML / JSON)
+- [x] Output in XML, JSON format
 - [x] Support for Direct SQL Statements 
+- [x] Support for MySQL, Postgres
 
 ##All Features / Bugs
 - [x] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)

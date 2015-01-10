@@ -25,15 +25,17 @@ import (
 )
 
 const (
+	currentVersion = "0.1"
+	layout         = "20060102150405"
+
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
 	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
-	currentVersion      = "0.1"
-	layout              = "20060102150405"
 )
 
 var (
-	config   m.Config
-	argArray []string
+	argArray              []string
+	config                m.Config
+	currentConfFileFormat = "json"
 )
 
 func main() {
@@ -44,75 +46,59 @@ func main() {
 	switch argArray[0] {
 	case "add", "a":
 		generateMigration()
-	case "up", "u":
-		migrateUpDown("up")
-	case "down", "d":
-		migrateUpDown("down")
 	case "create", "c":
 		if len(argArray) > 1 && argArray[1] != "" && argArray[1] == "conf" {
 			createConfigurationFile()
 		} else {
 			createMigration()
 		}
+	case "down", "d":
+		migrateUpDown("down")
+	case "up", "u":
+		migrateUpDown("up")
 	default:
 		panic("No or Wrong Actions provided.")
 	}
 	os.Exit(1)
 }
 
-func createConfigurationFile() {
-	writeToFile("pravasan.conf."+config.MigrationOutput, config, config.MigrationOutput)
-	fmt.Println("Config file created / updated.")
-}
-
 func init() {
-	var currentConfFileFormat = "json"
 	// fmt.Println("pravasan init() it runs before other functions")
-	if _, err := os.Stat("./pravasan.conf.json"); err == nil {
-		currentConfFileFormat = "json"
-		bs, err := ioutil.ReadFile("pravasan.conf.json")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		docScript := []byte(bs)
-		json.Unmarshal(docScript, &config)
-	} else if _, err := os.Stat("./pravasan.conf.xml"); err == nil {
-		currentConfFileFormat = "xml"
-		bs, err := ioutil.ReadFile("pravasan.conf.xml")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		docScript := []byte(bs)
-		xml.Unmarshal(docScript, &config)
-	}
+
+	checkConfigFileExists(&config)
 
 	var (
-		dbname             string
-		dbType             string
-		extn               string
-		flagPassword       = false
-		host               string
-		migrationTableName string
-		output             string
-		port               string
-		prefix             string
-		un                 string
-		version            = false
+		flagPassword = false
+		version      = false
+
+		configOutput    string
+		dbHostname      string
+		dbName          string
+		dbPort          string
+		dbType          string
+		dbUsername      string
+		indexPrefix     string
+		indexSuffix     string
+		migFileExtn     string
+		migFilePrefix   string
+		migOutputFormat string
+		migTableName    string
 	)
 
-	flag.BoolVar(&flagPassword, "p", false, "specify the option asking for database password")
+	flag.BoolVar(&flagPassword, "p", false, "database password")
 	flag.BoolVar(&version, "version", false, "print Pravasan version")
-	flag.StringVar(&dbname, "d", "", "specify the database name")
-	flag.StringVar(&dbType, "dbType", "mysql", "specify the database type")
-	flag.StringVar(&extn, "extn", "prvsn", "specify the migration file extension")
-	flag.StringVar(&host, "h", "localhost", "specify the database hostname")
-	flag.StringVar(&migrationTableName, "migration_table_name", "schema_migrations", "supported format are json, xml")
-	flag.StringVar(&output, "output", currentConfFileFormat, "supported format are json, xml")
-	flag.StringVar(&port, "port", "5432", "specify the database port")
-	flag.StringVar(&prefix, "prefix", "", "specify the text to be prefix with the migration file")
-	flag.StringVar(&un, "u", "", "specify the database username")
+	flag.StringVar(&configOutput, "confOutput", currentConfFileFormat, "config file format: json, xml")
+	flag.StringVar(&dbHostname, "h", "localhost", "database hostname")
+	flag.StringVar(&dbName, "d", "", "database name")
+	flag.StringVar(&dbPort, "port", "5432", "database port")
+	flag.StringVar(&dbType, "dbType", "mysql", "database type")
+	flag.StringVar(&dbUsername, "u", "", "database username")
+	flag.StringVar(&indexPrefix, "indexPrefix", "idx", "prefix for creating Indexes")
+	flag.StringVar(&indexSuffix, "indexSuffix", "", "suffix for creating Indexes")
+	flag.StringVar(&migFileExtn, "migFileExtn", "prvsn", "migration file extension")
+	flag.StringVar(&migFilePrefix, "migFilePrefix", "", "prefix for migration file")
+	flag.StringVar(&migOutputFormat, "migOutput", "json", "current supported format: json, xml")
+	flag.StringVar(&migTableName, "migTableName", "schema_migrations", "migration table name")
 	flag.Parse()
 
 	if version {
@@ -121,38 +107,44 @@ func init() {
 			os.Exit(1)
 		}
 	}
-
-	if dbType != "" {
-		config.DbType = dbType
-	}
-	if un != "" {
-		config.DbUsername = un
-	}
 	if flagPassword {
 		fmt.Printf("Enter DB Password : ")
 		pw := gopass.GetPasswd()
 		config.DbPassword = string(pw)
 	}
-	if dbname != "" {
-		config.DbName = dbname
+
+	if dbHostname != "" {
+		config.DbHostname = dbHostname
 	}
-	if host != "" {
-		config.DbHostname = host
+	if dbName != "" {
+		config.DbName = dbName
 	}
-	if port != "" {
-		config.DbPortnumber = port
+	if dbPort != "" {
+		config.DbPort = dbPort
 	}
-	if prefix != "" {
-		config.FilePrefix = prefix
+	if dbType != "" {
+		config.DbType = dbType
 	}
-	if extn != "" {
-		config.FileExtension = extn
+	if dbUsername != "" {
+		config.DbUsername = dbUsername
 	}
-	if output != "" {
-		config.MigrationOutput = strings.ToLower(output)
+	if indexPrefix != "" {
+		config.IndexPrefix = indexPrefix
 	}
-	if migrationTableName != "" {
-		config.MigrationTableName = strings.ToLower(migrationTableName)
+	if indexSuffix != "" {
+		config.IndexSuffix = indexSuffix
+	}
+	if migFileExtn != "" {
+		config.MigrationFileExtension = migFileExtn
+	}
+	if migFilePrefix != "" {
+		config.MigrationFilePrefix = migFilePrefix
+	}
+	if migOutputFormat != "" {
+		config.MigrationOutputFormat = strings.ToLower(migOutputFormat)
+	}
+	if migTableName != "" {
+		config.MigrationTableName = strings.ToLower(migTableName)
 	}
 	argArray = flag.Args()
 
@@ -171,35 +163,35 @@ func createMigration() {
 func generateMigration() {
 	t := time.Now()
 	mm := m.Migration{}
-	mm.ID = config.FilePrefix + t.Format(layout)
+	mm.ID = config.MigrationFilePrefix + t.Format(layout)
 	switch argArray[1] {
-	case "create_table", "ct":
-		fnCreateTable(&mm.Up)
-		fnDropTable(&mm.Down)
-	case "drop_table", "dt":
-		fnDropTable(&mm.Up)
-		fnCreateTable(&mm.Down)
-	case "rename_table", "rt":
-		fnRenameTable(&mm.Up, &mm.Down)
 	case "add_column", "ac":
 		fnAddColumn(&mm.Up)
 		fnDropColumn(&mm.Down)
+	case "add_index", "ai":
+		fnAddIndex(&mm.Up, &mm.Down)
+	case "create_table", "ct":
+		fnCreateTable(&mm.Up)
+		fnDropTable(&mm.Down)
 	case "drop_column", "dc":
 		fnDropColumn(&mm.Up)
 		fnAddColumn(&mm.Down)
+	case "drop_table", "dt":
+		fnDropTable(&mm.Up)
+		fnCreateTable(&mm.Down)
+	// case "rename_table", "rt":
+	// 	fnRenameTable(&mm.Up, &mm.Down)
 	case "sql", "s":
 		fnSql(&mm)
 	// case "change_column", "cc":
 	// 	fnChangeColumn(&mm.Up, &mm.Down)
 	// case "rename_column", "rc":
 	// 	fnRenameColumn(&mm.Up, &mm.Down)
-	// case "add_index", "ai":
-	// 	fnAddIndex(&mm.Up, &mm.Down)
 	default:
 		panic("No or wrong Actions provided.")
 	}
 
-	writeToFile(mm.ID+"."+config.MigrationOutput+"."+config.FileExtension, mm, config.MigrationOutput)
+	writeToFile(mm.ID+"."+config.MigrationOutputFormat+"."+config.MigrationFileExtension, mm, config.MigrationOutputFormat)
 
 	os.Exit(1)
 }
@@ -223,7 +215,7 @@ func fnSql(mig *m.Migration) {
 	}
 	mig.Up.Sql = strings.TrimSpace(localSql)
 
-	fmt.Println("Enter SQL statements for Down section of migration")
+	fmt.Println("Now enter SQL statements for Down section of migration")
 	localSql = ""
 	for {
 		line, _, err := reader.ReadLine()
@@ -235,50 +227,6 @@ func fnSql(mig *m.Migration) {
 		}
 	}
 	mig.Down.Sql = strings.TrimSpace(localSql)
-}
-
-func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown) {
-	// ct := m.CreateTable{}
-	// ct.TableName = argArray[2]
-	// fieldArray := argArray[3:len(argArray)]
-	// for key, value := range fieldArray {
-	// 	fieldArray[key] = strings.Trim(value, ", ")
-	// 	r, _ := regexp.Compile(FieldDataTypeRegexp)
-	// 	if r.MatchString(fieldArray[key]) == true {
-	// 		split := r.FindAllStringSubmatch(fieldArray[key], -1)
-	// 		col := m.Columns{}
-	// 		col.FieldName = split[0][1]
-	// 		col.DataType = split[0][2]
-	// 		ct.Columns = append(ct.Columns, col)
-	// 	}
-	// }
-	// mm.CreateTable = append(mm.CreateTable, ct)
-
-	// ai := m.AddIndex{}
-	// ai.TableName = argArray[2]
-	// fieldArray = argArray[3:len(argArray)]
-	// for key, value := range fieldArray {
-	// 	fieldArray[key] = strings.Trim(value, ", ")
-	// 	r, _ := regexp.Compile(FieldDataTypeRegexp)
-	// 	if r.MatchString(fieldArray[key]) == true {
-	// 		split := r.FindAllStringSubmatch(fieldArray[key], -1)
-	// 		col := m.Columns{}
-	// 		col.FieldName = split[0][1]
-	// 		col.DataType = split[0][2]
-	// 		ai.Columns = append(ai.Columns, col)
-	// 	}
-	// }
-	// mUp.AddIndex = append(mUp.AddIndex, ai)
-}
-
-func fnChangeColumn(mUp *m.UpDown, mDown *m.UpDown) {
-}
-
-func fnRenameColumn(mUp *m.UpDown, mDown *m.UpDown) {
-}
-
-func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown) {
-
 }
 
 func fnAddColumn(mm *m.UpDown) {
@@ -299,6 +247,56 @@ func fnAddColumn(mm *m.UpDown) {
 		}
 	}
 	mm.AddColumn = append(mm.AddColumn, ac)
+}
+
+func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown) {
+	ai := m.AddIndex{}
+	di := m.DropIndex{}
+	ai.TableName = argArray[2]
+	di.TableName = argArray[2]
+	fieldArray := argArray[3:len(argArray)]
+	for key, value := range fieldArray {
+		fieldArray[key] = strings.Trim(value, ", ")
+		r, _ := regexp.Compile(FieldDataTypeRegexp)
+		col := m.Columns{}
+		if r.MatchString(fieldArray[key]) == true {
+			split := r.FindAllStringSubmatch(fieldArray[key], -1)
+			col.FieldName = split[0][1]
+			col.DataType = split[0][2]
+			ai.Columns = append(ai.Columns, col)
+			di.Columns = append(di.Columns, col)
+		} else if fieldArray[key] != "" {
+			col.FieldName = fieldArray[key]
+			ai.Columns = append(ai.Columns, col)
+			di.Columns = append(di.Columns, col)
+		} else {
+			ai = m.AddIndex{}
+			di = m.DropIndex{}
+		}
+	}
+	mUp.AddIndex = append(mUp.AddIndex, ai)
+	mDown.DropIndex = append(mDown.DropIndex, di)
+}
+
+func fnChangeColumn(mUp *m.UpDown, mDown *m.UpDown) {
+}
+
+func fnCreateTable(mm *m.UpDown) {
+	ct := m.CreateTable{}
+	ct.TableName = argArray[2]
+	fieldArray := argArray[3:len(argArray)]
+	for key, value := range fieldArray {
+		fieldArray[key] = strings.Trim(value, ", ")
+		r, _ := regexp.Compile(FieldDataTypeRegexp)
+		if r.MatchString(fieldArray[key]) == true {
+			split := r.FindAllStringSubmatch(fieldArray[key], -1)
+			col := m.Columns{}
+			col.FieldName = split[0][1]
+			col.DataType = split[0][2]
+			ct.Columns = append(ct.Columns, col)
+		}
+	}
+	mm.CreateTable = append(mm.CreateTable, ct)
 }
 
 func fnDropColumn(mm *m.UpDown) {
@@ -328,24 +326,6 @@ func fnDropTable(mm *m.UpDown) {
 	dt := m.DropTable{}
 	dt.TableName = argArray[2]
 	mm.DropTable = append(mm.DropTable, dt)
-}
-
-func fnCreateTable(mm *m.UpDown) {
-	ct := m.CreateTable{}
-	ct.TableName = argArray[2]
-	fieldArray := argArray[3:len(argArray)]
-	for key, value := range fieldArray {
-		fieldArray[key] = strings.Trim(value, ", ")
-		r, _ := regexp.Compile(FieldDataTypeRegexp)
-		if r.MatchString(fieldArray[key]) == true {
-			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := m.Columns{}
-			col.FieldName = split[0][1]
-			col.DataType = split[0][2]
-			ct.Columns = append(ct.Columns, col)
-		}
-	}
-	mm.CreateTable = append(mm.CreateTable, ct)
 }
 
 // migrateUpDown - used to perform the Action Migration either Up or Down & chooses the DB too.
@@ -393,7 +373,7 @@ func migrateUpDown(updown string) {
 			mig m.UpDown
 		)
 
-		if config.MigrationOutput == "json" {
+		if config.MigrationOutputFormat == "json" {
 			json.Unmarshal(docScript, &mm)
 		} else {
 			xml.Unmarshal(docScript, &mm)
@@ -426,7 +406,7 @@ func migrationFiles(updown string) []string {
 	files, _ := ioutil.ReadDir("./")
 	var onlyMigFiles []string
 	for _, f := range files {
-		if !f.IsDir() && strings.Contains(f.Name(), "."+config.MigrationOutput+"."+config.FileExtension) {
+		if !f.IsDir() && strings.Contains(f.Name(), "."+config.MigrationOutputFormat+"."+config.MigrationFileExtension) {
 			onlyMigFiles = append(onlyMigFiles, f.Name())
 		}
 	}
@@ -457,6 +437,34 @@ func writeToFile(filename string, obj interface{}, format string) {
 	file.Close()
 }
 
+func createConfigurationFile() {
+	writeToFile("pravasan.conf."+currentConfFileFormat, config, currentConfFileFormat)
+	fmt.Println("Config file created.")
+}
+
 func printCurrentVersion() {
 	fmt.Println("pravasan version " + currentVersion)
+}
+
+// checkConfigFileExists loads the configuration if it exists whether it is XML or JSON.
+func checkConfigFileExists(c *m.Config) {
+	if _, err := os.Stat("./pravasan.conf.json"); err == nil {
+		currentConfFileFormat = "json"
+		bs, err := ioutil.ReadFile("pravasan.conf.json")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		docScript := []byte(bs)
+		json.Unmarshal(docScript, &c)
+	} else if _, err := os.Stat("./pravasan.conf.xml"); err == nil {
+		currentConfFileFormat = "xml"
+		bs, err := ioutil.ReadFile("pravasan.conf.xml")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		docScript := []byte(bs)
+		xml.Unmarshal(docScript, &c)
+	}
 }

@@ -27,3 +27,5 @@ pravasan
 2014*.prvsn
 2015*.prvsn
 pravasan.conf.json
+pravasan.conf.xml
+pravasan_*

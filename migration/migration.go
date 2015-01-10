@@ -2,16 +2,18 @@ package migration
 
 // Config used for general configuration settings for Migration application
 type Config struct {
-	DbType             string `xml:"DbType,omitempty" json:"DbType,omitempty"`
-	DbUsername         string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
-	DbPassword         string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`
-	DbName             string `xml:"DbName,omitempty" json:"DbName,omitempty"`
-	DbHostname         string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
-	DbPortnumber       string `xml:"DbPortnumber,omitempty" json:"DbPortnumber,omitempty"`
-	FilePrefix         string `xml:"FilePrefix,omitempty" json:"FilePrefix,omitempty"`
-	FileExtension      string `xml:"FileExtension,omitempty" json:"FileExtension,omitempty"`
-	MigrationOutput    string `xml:"MigrationOutput,omitempty" json:"MigrationOutput,omitempty"`
-	MigrationTableName string `xml:"MigrationTableName,omitempty" json:"MigrationTableName,omitempty"`
+	DbHostname             string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
+	DbName                 string `xml:"DbName,omitempty" json:"DbName,omitempty"`
+	DbPassword             string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`
+	DbPort                 string `xml:"DbPort,omitempty" json:"DbPort,omitempty"`
+	DbType                 string `xml:"DbType,omitempty" json:"DbType,omitempty"`
+	DbUsername             string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
+	IndexPrefix            string `xml:"IndexPrefix,omitempty" json:"IndexPrefix,omitempty"`
+	IndexSuffix            string `xml:"IndexSuffix,omitempty" json:"IndexSuffix,omitempty"`
+	MigrationFileExtension string `xml:"MigrationFileExtension,omitempty" json:"MigrationFileExtension,omitempty"`
+	MigrationFilePrefix    string `xml:"MigrationFilePrefix,omitempty" json:"MigrationFilePrefix,omitempty"`
+	MigrationOutputFormat  string `xml:"MigrationOutputFormat,omitempty" json:"MigrationOutputFormat,omitempty"`
+	MigrationTableName     string `xml:"MigrationTableName,omitempty" json:"MigrationTableName,omitempty"`
 }
 
 // Migration structure is combination of Up / Down structure.

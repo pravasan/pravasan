@@ -15,10 +15,12 @@ import (
 
 // All global variable declartion done here.
 var (
+	bTQ                = "\"" // bTQ = bTQ
 	Db                 *sql.DB
-	workingVersion     string
+	localConfig        m.Config
 	localUpDown        string
 	migrationTableName string
+	workingVersion     string
 )
 
 func init() {
@@ -34,12 +36,13 @@ func Init(c m.Config) {
 		log.Fatal(err)
 	}
 	migrationTableName = c.MigrationTableName
+	localConfig = c
 }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
 func GetLastMigrationNo() string {
 	var maxVersion = ""
-	query := "SELECT max(\"version\") FROM \"" + migrationTableName + "\""
+	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + "" + migrationTableName + "" + bTQ + ""
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -54,7 +57,7 @@ func GetLastMigrationNo() string {
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
 func CreateMigrationTable() {
-	query := "CREATE TABLE \"" + migrationTableName + "\" (version VARCHAR(255))"
+	query := "CREATE TABLE " + bTQ + "" + migrationTableName + "" + bTQ + " (version VARCHAR(255))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -67,9 +70,9 @@ func CreateMigrationTable() {
 func updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO \"" + migrationTableName + "\"(version) VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO " + bTQ + "" + migrationTableName + "" + bTQ + "(version) VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM \"" + migrationTableName + "\" WHERE version='" + workingVersion + "'"
+		query = "DELETE FROM " + bTQ + "" + migrationTableName + "" + bTQ + " WHERE version='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -103,36 +106,36 @@ func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
 		for _, v := range mig.CreateTable {
 			var valuesArray []string
 			for _, vv := range v.Columns {
-				valuesArray = append(valuesArray, "\""+vv.FieldName+"\" "+dataTypeConversion(vv.DataType))
+				valuesArray = append(valuesArray, ""+bTQ+""+vv.FieldName+""+bTQ+" "+dataTypeConversion(vv.DataType))
 			}
-			createTable("\""+v.TableName+"\"", valuesArray)
+			createTable(""+bTQ+""+v.TableName+""+bTQ+"", valuesArray)
 		}
 		for _, v := range mig.DropTable {
-			dropTable("\"" + v.TableName + "\"")
+			dropTable("" + bTQ + "" + v.TableName + "" + bTQ + "")
 		}
 		for _, v := range mig.AddColumn {
 			for _, vv := range v.Columns {
-				addColumn("\""+v.TableName+"\"", "\""+vv.FieldName+"\" ", dataTypeConversion(vv.DataType))
+				addColumn(""+bTQ+""+v.TableName+""+bTQ+"", ""+bTQ+""+vv.FieldName+""+bTQ+" ", dataTypeConversion(vv.DataType))
 			}
 		}
 		for _, v := range mig.DropColumn {
 			for _, vv := range v.Columns {
-				dropColumn("\""+v.TableName+"\"", "\""+vv.FieldName+"\" ")
+				dropColumn(""+bTQ+""+v.TableName+""+bTQ+"", ""+bTQ+""+vv.FieldName+""+bTQ+" ")
 			}
 		}
 		for _, v := range mig.AddIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, "\""+vv.FieldName+"\" ")
+				fieldNameArray = append(fieldNameArray, ""+bTQ+""+vv.FieldName+""+bTQ+" ")
 			}
-			addIndex("\""+v.TableName+"\"", v.IndexType, fieldNameArray)
+			addIndex(""+bTQ+""+v.TableName+""+bTQ+"", v.IndexType, fieldNameArray)
 		}
 		for _, v := range mig.DropIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, "\""+vv.FieldName+"\" ")
+				fieldNameArray = append(fieldNameArray, ""+bTQ+""+vv.FieldName+""+bTQ+" ")
 			}
-			dropIndex("\""+v.TableName+"\"", v.IndexType, fieldNameArray)
+			dropIndex(""+bTQ+""+v.TableName+""+bTQ+"", v.IndexType, fieldNameArray)
 		}
 		if mig.Sql != "" {
 			directSQL(mig.Sql)
@@ -180,8 +183,11 @@ func dropColumn(tableName string, columnName string) {
 }
 
 func addIndex(tableName string, indexType string, field []string) {
+	// #TODO currently indexType is always empty as we don't have a proper way.
+
 	sort.Strings(field)
-	tmpIndexName := strings.ToLower(strings.Join(field, "_") + "_index")
+	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
+	tmpIndexName = strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), ""+bTQ+"", "", -1), " ", "", -1)
 	query := "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
 	execQuery(query)
 	return
