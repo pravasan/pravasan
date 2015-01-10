@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -185,6 +187,8 @@ func generateMigration() {
 	case "drop_column", "dc":
 		fnDropColumn(&mm.Up)
 		fnAddColumn(&mm.Down)
+	case "sql", "s":
+		fnSql(&mm)
 	// case "change_column", "cc":
 	// 	fnChangeColumn(&mm.Up, &mm.Down)
 	// case "rename_column", "rc":
@@ -198,6 +202,39 @@ func generateMigration() {
 	writeToFile(mm.ID+"."+config.MigrationOutput+"."+config.FileExtension, mm, config.MigrationOutput)
 
 	os.Exit(1)
+}
+
+func fnSql(mig *m.Migration) {
+	fmt.Println("Hint : Type as many lines as you want, when you want to finish ^D (non Windows) or ^X (Windows)")
+	var fp *os.File
+	fp = os.Stdin
+	reader := bufio.NewReaderSize(fp, 4096)
+
+	fmt.Println("Enter SQL statements for Up section of migration")
+	var localSql string
+	for {
+		line, _, err := reader.ReadLine()
+		localSql = localSql + string(line) + " "
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+	}
+	mig.Up.Sql = strings.TrimSpace(localSql)
+
+	fmt.Println("Enter SQL statements for Down section of migration")
+	localSql = ""
+	for {
+		line, _, err := reader.ReadLine()
+		localSql = localSql + string(line) + " "
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			panic(err)
+		}
+	}
+	mig.Down.Sql = strings.TrimSpace(localSql)
 }
 
 func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown) {
@@ -386,7 +423,7 @@ func migrateUpDown(updown string) {
 }
 
 func migrationFiles(updown string) []string {
-	files, _ := ioutil.ReadDir("./*.json.prvsn")
+	files, _ := ioutil.ReadDir("./")
 	var onlyMigFiles []string
 	for _, f := range files {
 		if !f.IsDir() && strings.Contains(f.Name(), "."+config.MigrationOutput+"."+config.FileExtension) {

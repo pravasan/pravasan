@@ -129,8 +129,16 @@ func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
 			}
 			dropIndex("`"+v.TableName+"`", v.IndexType, fieldNameArray)
 		}
+		if mig.Sql != "" {
+			directSQL(mig.Sql)
+		}
 		updateMigrationTable()
 	}
+}
+
+func directSQL(query string) {
+	execQuery(query)
+	return
 }
 
 func execQuery(query string) {
