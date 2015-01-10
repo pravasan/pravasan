@@ -15,9 +15,10 @@ import (
 
 // All global variable declartion done here.
 var (
-	Db             *sql.DB
-	workingVersion string
-	localUpDown    string
+	Db                 *sql.DB
+	workingVersion     string
+	localUpDown        string
+	migrationTableName string
 )
 
 func init() {
@@ -27,18 +28,22 @@ func init() {
 
 // Init is called to initiate the connection to check and do some activities
 func Init(c m.Config) {
-	// Below line to be changed for Postgres
-	// Db, _ = sql.Open("mysql", c.DbUsername+":"+c.DbPassword+"@/"+c.DbName)
+	var err error
+	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
+	if err != nil {
+		log.Fatal(err)
+	}
+	migrationTableName = c.MigrationTableName
 }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
 func GetLastMigrationNo() string {
 	var maxVersion = ""
-	query := "SELECT max(`version`) FROM `schema_migrations`"
+	query := "SELECT max(\"version\") FROM \"" + migrationTableName + "\""
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
-		log.Println("schema_migrations table doesn't exists")
+		log.Println(migrationTableName + " table doesn't exists")
 		log.Fatal(err)
 	} else {
 		q.Next()
@@ -49,7 +54,7 @@ func GetLastMigrationNo() string {
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
 func CreateMigrationTable() {
-	query := "CREATE TABLE `schema_migrations` (version VARCHAR(255))"
+	query := "CREATE TABLE \"" + migrationTableName + "\" (version VARCHAR(255))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -62,9 +67,9 @@ func CreateMigrationTable() {
 func updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO `schema_migrations`(version) VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO \"" + migrationTableName + "\"(version) VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM `schema_migrations` WHERE version='" + workingVersion + "'"
+		query = "DELETE FROM \"" + migrationTableName + "\" WHERE version='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -98,36 +103,36 @@ func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
 		for _, v := range mig.CreateTable {
 			var valuesArray []string
 			for _, vv := range v.Columns {
-				valuesArray = append(valuesArray, "`"+vv.FieldName+"` "+dataTypeConversion(vv.DataType))
+				valuesArray = append(valuesArray, "\""+vv.FieldName+"\" "+dataTypeConversion(vv.DataType))
 			}
-			createTable("`"+v.TableName+"`", valuesArray)
+			createTable("\""+v.TableName+"\"", valuesArray)
 		}
 		for _, v := range mig.DropTable {
-			dropTable("`" + v.TableName + "`")
+			dropTable("\"" + v.TableName + "\"")
 		}
 		for _, v := range mig.AddColumn {
 			for _, vv := range v.Columns {
-				addColumn("`"+v.TableName+"`", "`"+vv.FieldName+"` ", dataTypeConversion(vv.DataType))
+				addColumn("\""+v.TableName+"\"", "\""+vv.FieldName+"\" ", dataTypeConversion(vv.DataType))
 			}
 		}
 		for _, v := range mig.DropColumn {
 			for _, vv := range v.Columns {
-				dropColumn("`"+v.TableName+"`", "`"+vv.FieldName+"` ")
+				dropColumn("\""+v.TableName+"\"", "\""+vv.FieldName+"\" ")
 			}
 		}
 		for _, v := range mig.AddIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, "`"+vv.FieldName+"` ")
+				fieldNameArray = append(fieldNameArray, "\""+vv.FieldName+"\" ")
 			}
-			addIndex("`"+v.TableName+"`", v.IndexType, fieldNameArray)
+			addIndex("\""+v.TableName+"\"", v.IndexType, fieldNameArray)
 		}
 		for _, v := range mig.DropIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, "`"+vv.FieldName+"` ")
+				fieldNameArray = append(fieldNameArray, "\""+vv.FieldName+"\" ")
 			}
-			dropIndex("`"+v.TableName+"`", v.IndexType, fieldNameArray)
+			dropIndex("\""+v.TableName+"\"", v.IndexType, fieldNameArray)
 		}
 		if mig.Sql != "" {
 			directSQL(mig.Sql)

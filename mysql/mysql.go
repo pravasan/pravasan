@@ -15,9 +15,10 @@ import (
 
 // All global variable declartion done here.
 var (
-	Db             *sql.DB
-	workingVersion string
-	localUpDown    string
+	Db                 *sql.DB
+	workingVersion     string
+	localUpDown        string
+	migrationTableName string
 )
 
 func init() {
@@ -28,16 +29,17 @@ func init() {
 // Init is called to initiate the connection to check and do some activities
 func Init(c m.Config) {
 	Db, _ = sql.Open("mysql", c.DbUsername+":"+c.DbPassword+"@/"+c.DbName)
+	migrationTableName = c.MigrationTableName
 }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
 func GetLastMigrationNo() string {
 	var maxVersion = ""
-	query := "SELECT max(`version`) FROM `schema_migrations`"
+	query := "SELECT max(`version`) FROM `" + migrationTableName + "`"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
-		log.Println("schema_migrations table doesn't exists")
+		log.Println(migrationTableName + " table doesn't exists")
 		log.Fatal(err)
 	} else {
 		q.Next()
@@ -48,7 +50,7 @@ func GetLastMigrationNo() string {
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
 func CreateMigrationTable() {
-	query := "CREATE TABLE `schema_migrations` (version VARCHAR(255))"
+	query := "CREATE TABLE `" + migrationTableName + "` (version VARCHAR(255))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -61,9 +63,9 @@ func CreateMigrationTable() {
 func updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO `schema_migrations`(version) VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO `" + migrationTableName + "`(version) VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM `schema_migrations` WHERE version='" + workingVersion + "'"
+		query = "DELETE FROM `" + migrationTableName + "` WHERE version='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()

@@ -39,8 +39,8 @@ Usage of pravasan:
 
 To create the configuration file use either of the below commands & pravasan.conf.json / pravasan.conf.xml will be created
 ```
-pravasan -u="root" -p -d="testdb" -h="localhost" -port="5433" create conf 
-pravasan -u=root -p -d=testdb -h=localhost -port=5433 -output=xml create conf 
+pravasan -u="root" -p -dbType="mysql" -d="testdb" -h="localhost" -port="5433" create conf 
+pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 -output=xml create conf 
 ```
 
 Assuming the pravasan.conf.json file is set already
@@ -59,16 +59,16 @@ pravasan add sql
 pravasan add rename_table old_test123 new_test123
 pravasan add add_index test123 id name
 ```
-* Support for Postgres, SQLite, Oracle, MongoDB, etc.,
+* Support for SQLite, Oracle, MongoDB, etc.,
 
 ##High Level Features
 - [x] Output in XML, JSON format
-- [x] Support for MySQL
+- [x] Support for MySQL, Postgres
 - [x] Create & read from Conf file (XML / JSON)
 - [x] Support for Direct SQL Statements 
 
 ##All Features / Bugs
-- [ ] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)
+- [x] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)
 - [ ] [v0.2](https://github.com/pravasan/pravasan/milestones/v0.2)
 - [ ] [v0.3](https://github.com/pravasan/pravasan/milestones/v0.3)
 - [ ] [v1.0](https://github.com/pravasan/pravasan/milestones/v1.0)
