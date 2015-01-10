@@ -25,7 +25,7 @@ Flags
 ```
 Usage of pravasan:
   -d="": specify the database name
-  -db_type="mysql": specify the database type
+  -dbType="mysql": specify the database type
   -extn="prvsn": specify the migration file extension
   -h="localhost": specify the database hostname
   -p=false: specify the option asking for database password

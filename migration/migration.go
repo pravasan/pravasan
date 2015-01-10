@@ -1,62 +1,64 @@
 package migration
 
+// Config used for general configuration settings for Migration application
 type Config struct {
-	Db_type          string `xml:"Db_type,omitempty"json:"Db_type,omitempty"`
-	Db_username      string `xml:"Db_username,omitempty"json:"Db_username,omitempty"`
-	Db_password      string `xml:"Db_password,omitempty"json:"Db_password,omitempty"`
-	Db_name          string `xml:"Db_name,omitempty"json:"Db_name,omitempty"`
-	Db_hostname      string `xml:"Db_hostname,omitempty"json:"Db_hostname,omitempty"`
-	Db_portnumber    string `xml:"Db_portnumber,omitempty"json:"Db_portnumber,omitempty"`
-	File_prefix      string `xml:"File_prefix,omitempty"json:"File_prefix,omitempty"`
-	File_extension   string `xml:"File_extension,omitempty"json:"File_extension,omitempty"`
-	Migration_output string `xml:"Migration_output,omitempty"json:"Migration_output,omitempty"`
+	DbType          string `xml:"DbType,omitempty" json:"DbType,omitempty"`
+	DbUsername      string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
+	DbPassword      string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`
+	DbName          string `xml:"DbName,omitempty" json:"DbName,omitempty"`
+	DbHostname      string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
+	DbPortnumber    string `xml:"DbPortnumber,omitempty" json:"DbPortnumber,omitempty"`
+	FilePrefix      string `xml:"FilePrefix,omitempty" json:"FilePrefix,omitempty"`
+	FileExtension   string `xml:"FileExtension,omitempty" json:"FileExtension,omitempty"`
+	MigrationOutput string `xml:"MigrationOutput,omitempty" json:"MigrationOutput,omitempty"`
 }
 
+// Migration structure is combination of Up / Down structure.
 type Migration struct {
-	Id   string `xml:"id,omitempty" json:"id,omitempty"`
+	ID   string `xml:"id,omitempty" json:"id,omitempty"`
 	Up   UpDown `xml:"up,omitempty" json:"up,omitempty"`
 	Down UpDown `xml:"down,omitempty" json:"down,omitempty"`
 }
 
 type UpDown struct {
-	Create_Table []CreateTable `xml:"create_table,omitempty" json:"create_table,omitempty"`
-	Drop_Table   []DropTable   `xml:"drop_table,omitempty" json:"drop_table,omitempty"`
-	Add_Column   []AddColumn   `xml:"add_column,omitempty" json:"add_column,omitempty"`
-	Drop_Column  []DropColumn  `xml:"drop_column,omitempty" json:"drop_column,omitempty"`
-	Add_Index    []AddIndex    `xml:"add_index,omitempty" json:"add_index,omitempty"`
-	Drop_Index   []DropIndex   `xml:"drop_index,omitempty" json:"drop_index,omitempty"`
-	Sql          string        `xml:"sql,omitempty" json:"sql,omitempty"`
+	CreateTable []CreateTable `xml:"createTable,omitempty" json:"createTable,omitempty"`
+	DropTable   []DropTable   `xml:"dropTable,omitempty" json:"dropTable,omitempty"`
+	AddColumn   []AddColumn   `xml:"addColumn,omitempty" json:"addColumn,omitempty"`
+	DropColumn  []DropColumn  `xml:"dropColumn,omitempty" json:"dropColumn,omitempty"`
+	AddIndex    []AddIndex    `xml:"addIndex,omitempty" json:"addIndex,omitempty"`
+	DropIndex   []DropIndex   `xml:"dropIndex,omitempty" json:"dropIndex,omitempty"`
+	Sql         string        `xml:"sql,omitempty" json:"sql,omitempty"`
 }
 
 type CreateTable struct {
-	Table_Name string    `xml:"table_name,omitempty" json:"table_name,omitempty"`
-	Columns    []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 type DropTable struct {
-	Table_Name string `xml:"table_name,omitempty" json:"table_name,omitempty"`
+	TableName string `xml:"tableName,omitempty" json:"tableName,omitempty"`
 }
 
 type AddColumn struct {
-	Table_Name string    `xml:"table_name,omitempty" json:"table_name,omitempty"`
-	Columns    []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 type DropColumn struct {
-	Table_Name string    `xml:"table_name,omitempty" json:"table_name,omitempty"`
-	Columns    []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 type AddIndex struct {
-	Table_Name string    `xml:"table_name,omitempty" json:"table_name,omitempty"`
-	Index_Type string    `xml:"index_type,omitempty" json:"index_type,omitempty"`
-	Columns    []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
+	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 type DropIndex struct {
-	Table_Name string    `xml:"table_name,omitempty" json:"table_name,omitempty"`
-	Index_Type string    `xml:"index_type,omitempty" json:"index_type,omitempty"`
-	Columns    []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
+	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 type Columns struct {
