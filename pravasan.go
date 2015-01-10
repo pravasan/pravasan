@@ -179,8 +179,8 @@ func generateMigration() {
 	case "drop_table", "dt":
 		fnDropTable(&mm.Up)
 		fnCreateTable(&mm.Down)
-	// case "rename_table", "rt":
-	// 	fnRenameTable(&mm.Up, &mm.Down)
+	case "rename_table", "rt":
+		fnRenameTable(&mm.Up, &mm.Down)
 	case "sql", "s":
 		fnSql(&mm)
 	// case "change_column", "cc":
@@ -328,6 +328,16 @@ func fnDropTable(mm *m.UpDown) {
 	mm.DropTable = append(mm.DropTable, dt)
 }
 
+func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown) {
+	rt := m.RenameTable{}
+	rt.OldTableName = argArray[2]
+	rt.NewTableName = argArray[3]
+	mUp.RenameTable = append(mUp.RenameTable, rt)
+	rt.OldTableName = argArray[3]
+	rt.NewTableName = argArray[2]
+	mDown.RenameTable = append(mDown.RenameTable, rt)
+}
+
 // migrateUpDown - used to perform the Action Migration either Up or Down & chooses the DB too.
 func migrateUpDown(updown string) {
 	if config.DbName == "" || config.DbUsername == "" {
@@ -354,7 +364,6 @@ func migrateUpDown(updown string) {
 	}
 
 	for _, filename := range files {
-
 		// During migration down if count is reached then exit
 		if updown == "down" && reverseCount == processCount {
 			break

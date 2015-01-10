@@ -15,18 +15,13 @@ import (
 
 // All global variable declartion done here.
 var (
-	bTQ                = "\"" // bTQ = bTQ
+	bTQ                = "\"" // bTQ = backTickQuote
 	Db                 *sql.DB
 	localConfig        m.Config
 	localUpDown        string
 	migrationTableName string
 	workingVersion     string
 )
-
-func init() {
-	// This can be useful to check for version and any other dependencies etc.,
-	// fmt.Println("mysql init() it runs before other functions")
-}
 
 // Init is called to initiate the connection to check and do some activities
 func Init(c m.Config) {
@@ -39,10 +34,15 @@ func Init(c m.Config) {
 	localConfig = c
 }
 
+func init() {
+	// This can be useful to check for version and any other dependencies etc.,
+	// fmt.Println("mysql init() it runs before other functions")
+}
+
 // GetLastMigrationNo to get what is the last migration it has executed.
 func GetLastMigrationNo() string {
 	var maxVersion = ""
-	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + "" + migrationTableName + "" + bTQ + ""
+	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ + ""
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -57,7 +57,7 @@ func GetLastMigrationNo() string {
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
 func CreateMigrationTable() {
-	query := "CREATE TABLE " + bTQ + "" + migrationTableName + "" + bTQ + " (version VARCHAR(255))"
+	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (version VARCHAR(255))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -70,9 +70,9 @@ func CreateMigrationTable() {
 func updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO " + bTQ + "" + migrationTableName + "" + bTQ + "(version) VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(version) VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM " + bTQ + "" + migrationTableName + "" + bTQ + " WHERE version='" + workingVersion + "'"
+		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE version='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -103,39 +103,42 @@ func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
 	nid, _ := strconv.Atoi(lm.ID)
 	if nid != 0 {
 		fmt.Println("Executing ID : ", lm.ID)
-		for _, v := range mig.CreateTable {
-			var valuesArray []string
-			for _, vv := range v.Columns {
-				valuesArray = append(valuesArray, ""+bTQ+""+vv.FieldName+""+bTQ+" "+dataTypeConversion(vv.DataType))
-			}
-			createTable(""+bTQ+""+v.TableName+""+bTQ+"", valuesArray)
-		}
-		for _, v := range mig.DropTable {
-			dropTable("" + bTQ + "" + v.TableName + "" + bTQ + "")
-		}
 		for _, v := range mig.AddColumn {
 			for _, vv := range v.Columns {
-				addColumn(""+bTQ+""+v.TableName+""+bTQ+"", ""+bTQ+""+vv.FieldName+""+bTQ+" ", dataTypeConversion(vv.DataType))
-			}
-		}
-		for _, v := range mig.DropColumn {
-			for _, vv := range v.Columns {
-				dropColumn(""+bTQ+""+v.TableName+""+bTQ+"", ""+bTQ+""+vv.FieldName+""+bTQ+" ")
+				addColumn(bTQ+v.TableName+bTQ, bTQ+vv.FieldName+bTQ+" ", dataTypeConversion(vv.DataType))
 			}
 		}
 		for _, v := range mig.AddIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, ""+bTQ+""+vv.FieldName+""+bTQ+" ")
+				fieldNameArray = append(fieldNameArray, bTQ+vv.FieldName+bTQ+" ")
 			}
-			addIndex(""+bTQ+""+v.TableName+""+bTQ+"", v.IndexType, fieldNameArray)
+			addIndex(bTQ+v.TableName+bTQ, v.IndexType, fieldNameArray)
+		}
+		for _, v := range mig.CreateTable {
+			var valuesArray []string
+			for _, vv := range v.Columns {
+				valuesArray = append(valuesArray, bTQ+vv.FieldName+bTQ+" "+dataTypeConversion(vv.DataType))
+			}
+			createTable(bTQ+v.TableName+bTQ, valuesArray)
+		}
+		for _, v := range mig.DropColumn {
+			for _, vv := range v.Columns {
+				dropColumn(bTQ+v.TableName+bTQ, bTQ+vv.FieldName+bTQ+" ")
+			}
 		}
 		for _, v := range mig.DropIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, ""+bTQ+""+vv.FieldName+""+bTQ+" ")
+				fieldNameArray = append(fieldNameArray, bTQ+vv.FieldName+bTQ+" ")
 			}
-			dropIndex(""+bTQ+""+v.TableName+""+bTQ+"", v.IndexType, fieldNameArray)
+			dropIndex(bTQ+v.TableName+bTQ, v.IndexType, fieldNameArray)
+		}
+		for _, v := range mig.DropTable {
+			dropTable(bTQ + v.TableName + bTQ)
+		}
+		for _, v := range mig.RenameTable {
+			renameTable(bTQ+v.OldTableName+bTQ, bTQ+v.NewTableName+bTQ)
 		}
 		if mig.Sql != "" {
 			directSQL(mig.Sql)
@@ -150,7 +153,7 @@ func directSQL(query string) {
 }
 
 func execQuery(query string) {
-	fmt.Println("Postgres---" + query)
+	fmt.Println("MySQL---" + query)
 	q, err := Db.Query(query)
 	if err != nil {
 		log.Fatal(err)
@@ -187,7 +190,7 @@ func addIndex(tableName string, indexType string, field []string) {
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
-	tmpIndexName = strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), ""+bTQ+"", "", -1), " ", "", -1)
+	tmpIndexName = strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1)
 	query := "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
 	execQuery(query)
 	return
@@ -202,6 +205,12 @@ func dropIndex(tableName string, indexType string, field []string) {
 	} else {
 		query = "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 	}
+	execQuery(query)
+	return
+}
+
+func renameTable(oldTableName string, newTableName string) {
+	query := "ALTER TABLE " + oldTableName + " RENAME TO " + newTableName
 	execQuery(query)
 	return
 }

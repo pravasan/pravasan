@@ -52,6 +52,8 @@ pravasan add add_column test123 id:int
 pravasan add add_index test123 id order name
 pravasan add create_table test123 id:int name:string order:int status:bool
 pravasan add drop_column test123 id
+pravasan add drop_index test123 id order name
+pravasan add rename_table old_test123 new_test123
 pravasan add sql               # to add SQL statements directly.
 
 pravasan down [-1]
@@ -64,10 +66,7 @@ pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 add add_c
 ```
 
 ##Work in progress are:
-```
-pravasan add rename_table old_test123 new_test123
-```
-* Support for SQLite, Oracle, MongoDB, etc.,
+- [ ] Support for SQLite, Oracle, MongoDB, etc.,
 
 ##High Level Features
 - [x] Create & read from Conf file (XML / JSON)
