@@ -219,8 +219,11 @@ func addIndex(tableName string, indexType string, field []string) {
 }
 
 func dropIndex(tableName string, indexType string, field []string) {
+	// #TODO currently indexType is always empty as we don't have a proper way.
+
 	sort.Strings(field)
-	tmpIndexName := strings.ToLower(strings.Join(field, "_") + "_index")
+	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
+	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1), "_")
 	query := ""
 	if indexType != "" {
 		query = "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)

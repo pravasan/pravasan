@@ -177,6 +177,8 @@ func generateMigration() {
 	case "drop_column", "dc":
 		fnDropColumn(&mm.Up)
 		fnAddColumn(&mm.Down)
+	case "drop_index", "di":
+		fnAddIndex(&mm.Down, &mm.Up)
 	case "drop_table", "dt":
 		fnDropTable(&mm.Up)
 		fnCreateTable(&mm.Down)
