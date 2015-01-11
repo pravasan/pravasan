@@ -30,6 +30,7 @@ Usage of pravasan:
   -h="localhost": database hostname
   -indexPrefix="idx": prefix for creating Indexes
   -indexSuffix="": suffix for creating Indexes
+  -migDir="./": migration file stored directory
   -migFileExtn="prvsn": migration file extension
   -migFilePrefix="": prefix for migration file
   -migOutput="json": current supported format: json, xml
@@ -53,7 +54,7 @@ pravasan add add_index test123 id order name
 pravasan add create_table test123 id:int name:string order:int status:bool
 pravasan add drop_column test123 id
 pravasan add drop_index test123 id order name
-pravasan add rename_table old_test123 new_test123
+pravasan add rename_table test123 new_test123
 pravasan add sql               # to add SQL statements directly.
 
 pravasan down [-1]
@@ -63,7 +64,7 @@ pravasan up 20150103174227, 20150103174333
 
 If you like not to store the credentials in file then use it like this
 ```
-pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 add add_column test123 id:int
+pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 up 20150103174227
 ```
 
 ##Work in progress are:

@@ -10,6 +10,7 @@ type Config struct {
 	DbUsername             string `xml:"DbUsername,omitempty" json:"DbUsername,omitempty"`
 	IndexPrefix            string `xml:"IndexPrefix,omitempty" json:"IndexPrefix,omitempty"`
 	IndexSuffix            string `xml:"IndexSuffix,omitempty" json:"IndexSuffix,omitempty"`
+	MigrationDirectory     string `xml:"MigrationDirectory,omitempty" json:"MigrationDirectory,omitempty"`
 	MigrationFileExtension string `xml:"MigrationFileExtension,omitempty" json:"MigrationFileExtension,omitempty"`
 	MigrationFilePrefix    string `xml:"MigrationFilePrefix,omitempty" json:"MigrationFilePrefix,omitempty"`
 	MigrationOutputFormat  string `xml:"MigrationOutputFormat,omitempty" json:"MigrationOutputFormat,omitempty"`

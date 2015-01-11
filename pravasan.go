@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	currentVersion = "0.1"
+	currentVersion = "0.2"
 	layout         = "20060102150405"
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
@@ -80,6 +80,7 @@ func init() {
 		dbUsername      string
 		indexPrefix     string
 		indexSuffix     string
+		migDir          string
 		migFileExtn     string
 		migFilePrefix   string
 		migOutputFormat string
@@ -89,17 +90,18 @@ func init() {
 	flag.BoolVar(&flagPassword, "p", false, "database password")
 	flag.BoolVar(&version, "version", false, "print Pravasan version")
 	flag.StringVar(&configOutput, "confOutput", currentConfFileFormat, "config file format: json, xml")
-	flag.StringVar(&dbHostname, "h", "localhost", "database hostname")
+	flag.StringVar(&dbHostname, "h", "", "database hostname, default: localhost")
 	flag.StringVar(&dbName, "d", "", "database name")
-	flag.StringVar(&dbPort, "port", "5432", "database port")
-	flag.StringVar(&dbType, "dbType", "mysql", "database type")
+	flag.StringVar(&dbPort, "port", "", "database port, default: 3306")
+	flag.StringVar(&dbType, "dbType", "", "database type, default: mysql")
 	flag.StringVar(&dbUsername, "u", "", "database username")
-	flag.StringVar(&indexPrefix, "indexPrefix", "idx", "prefix for creating Indexes")
+	flag.StringVar(&indexPrefix, "indexPrefix", "", "prefix for creating Indexes, default: idx")
 	flag.StringVar(&indexSuffix, "indexSuffix", "", "suffix for creating Indexes")
-	flag.StringVar(&migFileExtn, "migFileExtn", "prvsn", "migration file extension")
+	flag.StringVar(&migDir, "migDir", "", "migration file stored directory, default: ./ ")
+	flag.StringVar(&migFileExtn, "migFileExtn", "", "migration file extension, default: prvsn")
 	flag.StringVar(&migFilePrefix, "migFilePrefix", "", "prefix for migration file")
-	flag.StringVar(&migOutputFormat, "migOutput", "json", "current supported format: json, xml")
-	flag.StringVar(&migTableName, "migTableName", "schema_migrations", "migration table name")
+	flag.StringVar(&migOutputFormat, "migOutput", "", "current supported format: json, xml & deafult: json")
+	flag.StringVar(&migTableName, "migTableName", "", "migration table name, default: schema_migrations")
 	flag.Parse()
 
 	if version {
@@ -114,41 +116,33 @@ func init() {
 		config.DbPassword = string(pw)
 	}
 
-	if dbHostname != "" {
-		config.DbHostname = dbHostname
-	}
-	if dbName != "" {
-		config.DbName = dbName
-	}
-	if dbPort != "" {
-		config.DbPort = dbPort
-	}
-	if dbType != "" {
-		config.DbType = dbType
-	}
-	if dbUsername != "" {
-		config.DbUsername = dbUsername
-	}
-	if indexPrefix != "" {
-		config.IndexPrefix = indexPrefix
-	}
-	if indexSuffix != "" {
-		config.IndexSuffix = indexSuffix
-	}
-	if migFileExtn != "" {
-		config.MigrationFileExtension = migFileExtn
-	}
-	if migFilePrefix != "" {
-		config.MigrationFilePrefix = migFilePrefix
-	}
-	if migOutputFormat != "" {
-		config.MigrationOutputFormat = strings.ToLower(migOutputFormat)
-	}
-	if migTableName != "" {
-		config.MigrationTableName = strings.ToLower(migTableName)
-	}
-	argArray = flag.Args()
+	config.DbHostname = updateConfigValue(config.DbHostname, dbHostname, "localhost")
+	config.DbName = updateConfigValue(config.DbName, dbName, "")
+	config.DbPort = updateConfigValue(config.DbPort, dbPort, "3306")
+	config.DbType = updateConfigValue(config.DbType, dbType, "mysql")
+	config.DbUsername = updateConfigValue(config.DbUsername, dbUsername, "")
+	config.IndexPrefix = updateConfigValue(config.IndexPrefix, indexPrefix, "idx")
+	config.IndexSuffix = updateConfigValue(config.IndexSuffix, indexSuffix, "")
+	config.MigrationDirectory = updateConfigValue(config.MigrationDirectory, strings.Trim(migDir, "/")+"/", "./")
+	config.MigrationFileExtension = updateConfigValue(config.MigrationFileExtension, migFileExtn, "prvsn")
+	config.MigrationFilePrefix = updateConfigValue(config.MigrationFilePrefix, migFilePrefix, "")
+	config.MigrationOutputFormat = updateConfigValue(config.MigrationOutputFormat, strings.ToLower(migOutputFormat), "json")
+	config.MigrationTableName = updateConfigValue(config.MigrationTableName, strings.ToLower(migTableName), "schema_migrations")
 
+	argArray = flag.Args()
+}
+
+func updateConfigValue(originalValue string, overwriteValue string, defValue string) string {
+	if overwriteValue != "" && overwriteValue != defValue {
+		return overwriteValue
+	}
+	if originalValue == "" {
+		if overwriteValue != "" {
+			return overwriteValue
+		}
+		return defValue
+	}
+	return originalValue
 }
 
 func createMigration() {
@@ -164,7 +158,7 @@ func createMigration() {
 func generateMigration() {
 	t := time.Now()
 	mm := m.Migration{}
-	mm.ID = config.MigrationFilePrefix + t.Format(layout)
+	mm.ID = t.Format(layout)
 	switch argArray[1] {
 	case "add_column", "ac":
 		fnAddColumn(&mm.Up)
@@ -194,7 +188,9 @@ func generateMigration() {
 		panic("No or wrong Actions provided.")
 	}
 
-	writeToFile(mm.ID+"."+config.MigrationOutputFormat+"."+config.MigrationFileExtension, mm, config.MigrationOutputFormat)
+	filename := config.MigrationDirectory + config.MigrationFilePrefix + mm.ID + "." + config.MigrationOutputFormat + "." + config.MigrationFileExtension
+	fmt.Println(filename)
+	writeToFile(filename, mm, config.MigrationOutputFormat)
 
 	os.Exit(1)
 }
@@ -456,11 +452,11 @@ func checkMigrationFilesExists(verFiles []string) (orderVerFiles []string, err e
 }
 
 func migrationFiles(updown string) []string {
-	files, _ := ioutil.ReadDir("./")
+	files, _ := ioutil.ReadDir(config.MigrationDirectory)
 	var onlyMigFiles []string
 	for _, f := range files {
 		if !f.IsDir() && strings.HasSuffix(f.Name(), "."+config.MigrationOutputFormat+"."+config.MigrationFileExtension) && strings.HasPrefix(f.Name(), config.MigrationFilePrefix) {
-			onlyMigFiles = append(onlyMigFiles, f.Name())
+			onlyMigFiles = append(onlyMigFiles, config.MigrationDirectory+f.Name())
 		}
 	}
 
