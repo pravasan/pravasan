@@ -58,6 +58,7 @@ pravasan add sql               # to add SQL statements directly.
 
 pravasan down [-1]
 pravasan up
+pravasan up 20150103174227, 20150103174333
 ```
 
 If you like not to store the credentials in file then use it like this

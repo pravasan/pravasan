@@ -10,6 +10,7 @@ import (
 
 	m "github.com/pravasan/pravasan/migration"
 
+	// #TODO need to write comment why use "_"
 	_ "github.com/lib/pq"
 )
 
@@ -33,7 +34,6 @@ func Init(c m.Config) {
 	migrationTableName = c.MigrationTableName
 	localConfig = c
 }
-
 func init() {
 	// This can be useful to check for version and any other dependencies etc.,
 	// fmt.Println("mysql init() it runs before other functions")
@@ -42,7 +42,7 @@ func init() {
 // GetLastMigrationNo to get what is the last migration it has executed.
 func GetLastMigrationNo() string {
 	var maxVersion = ""
-	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ + ""
+	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -57,7 +57,7 @@ func GetLastMigrationNo() string {
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
 func CreateMigrationTable() {
-	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (version VARCHAR(255))"
+	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -70,9 +70,9 @@ func CreateMigrationTable() {
 func updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(version) VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(" + bTQ + "version" + bTQ + ") VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE version='" + workingVersion + "'"
+		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -80,6 +80,24 @@ func updateMigrationTable() {
 		log.Println("not able to add version to the existing migration table")
 		log.Fatal(err)
 	}
+}
+
+func checkMigrationExecutedForID(id string) bool {
+	var version = ""
+	query := "SELECT " + bTQ + "version" + bTQ + " FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + id + "'"
+	q, err := Db.Query(query)
+	defer q.Close()
+	if err != nil {
+		log.Println("couldn't able to execute the check version query...")
+		log.Fatal(err)
+	} else {
+		q.Next()
+		q.Scan(&version)
+	}
+	if version == "" {
+		return false
+	}
+	return true
 }
 
 func dataTypeConversion(dt string) string {
@@ -93,9 +111,15 @@ func dataTypeConversion(dt string) string {
 }
 
 // ProcessNow is used to run the actual migraition whether it is UP or DOWN.
-func ProcessNow(lm m.Migration, mig m.UpDown, updown string) {
-	if updown == "up" && lm.ID <= GetLastMigrationNo() {
-		return
+func ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
+	if updown == "up" {
+		if force == false && lm.ID <= GetLastMigrationNo() {
+			return
+		}
+		if force == true && checkMigrationExecutedForID(lm.ID) {
+			fmt.Println(lm.ID + " -> Its already executed.")
+			return
+		}
 	}
 	localUpDown = updown
 
@@ -190,7 +214,7 @@ func addIndex(tableName string, indexType string, field []string) {
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
-	tmpIndexName = strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1)
+	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1), "_")
 	query := "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
 	execQuery(query)
 	return
@@ -210,7 +234,7 @@ func dropIndex(tableName string, indexType string, field []string) {
 }
 
 func renameTable(oldTableName string, newTableName string) {
-	query := "ALTER TABLE " + oldTableName + " RENAME TO " + newTableName
+	query := "ALTER TABLE " + oldTableName + " RENAME " + newTableName
 	execQuery(query)
 	return
 }

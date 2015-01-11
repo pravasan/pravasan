@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -340,26 +341,41 @@ func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown) {
 
 // migrateUpDown - used to perform the Action Migration either Up or Down & chooses the DB too.
 func migrateUpDown(updown string) {
+
+	// Actual migration can't happen without having DB Name & DB User, rest can be default.
 	if config.DbName == "" || config.DbUsername == "" {
 		fmt.Println("Either Database Name or Username is not mentioned, or both are missed to mention.")
+		return
 	}
 
-	files := migrationFiles(updown)
+	var (
+		err          error
+		files        []string
+		processCount int
+		reverseCount = 1
+		force        = false
+	)
+
+	files = migrationFiles(updown)
 	if 0 == len(files) {
 		fmt.Println("No files in the directory")
 		return
 	}
 
-	var processCount int
-
-	// setting reverseCount
-	var reverseCount = 1
-	var err error
 	if len(argArray) > 1 && argArray[1] != "" {
-		reverseCount, err = strconv.Atoi(strings.Replace(argArray[1], "-", "", -1))
-		if err != nil {
-			log.Println("Wrong count to be reversed, only integer values accepted")
-			log.Fatal(err)
+		if updown == "down" {
+			reverseCount, err = strconv.Atoi(strings.Replace(argArray[1], "-", "", -1))
+			if err != nil {
+				log.Println("Wrong count to be reversed, only integer values accepted")
+				log.Fatal(err)
+			}
+		} else if updown == "up" {
+			files, err = checkMigrationFilesExists(argArray[1:len(argArray)])
+			if err != nil {
+				fmt.Println("one of the version number of the file mentioned is wrong.")
+				return
+			}
+			force = true
 		}
 	}
 
@@ -370,6 +386,7 @@ func migrateUpDown(updown string) {
 		}
 
 		// Read the content of the file & store into the mm structure
+		fmt.Println("Processing ... " + filename)
 		bs, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Println(err)
@@ -399,23 +416,48 @@ func migrateUpDown(updown string) {
 			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
 				continue
 			}
-			gdm_my.ProcessNow(mm, mig, updown)
+			gdm_my.ProcessNow(mm, mig, updown, force)
 		} else {
 			gdm_pq.Init(config)
 			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
 				continue
 			}
-			gdm_pq.ProcessNow(mm, mig, updown)
+			gdm_pq.ProcessNow(mm, mig, updown, force)
 		}
 		processCount++
 	}
+}
+
+func checkMigrationFilesExists(verFiles []string) (orderVerFiles []string, err error) {
+	err = nil
+	for _, indvlFile := range verFiles {
+		indvlFile = strings.Replace(indvlFile, ",", "", -1)
+		indvlFile = strings.Replace(indvlFile, " ", "", -1)
+		if !strings.HasSuffix(indvlFile, "."+config.MigrationOutputFormat+"."+config.MigrationFileExtension) {
+			indvlFile = indvlFile + "." + config.MigrationOutputFormat + "." + config.MigrationFileExtension
+		}
+		if config.MigrationFilePrefix != "" && !strings.HasPrefix(indvlFile, config.MigrationFilePrefix) {
+			indvlFile = config.MigrationFilePrefix + indvlFile
+		}
+		if _, err := os.Stat(indvlFile); err == nil {
+			orderVerFiles = append(orderVerFiles, indvlFile)
+		} else {
+			err = errors.New("coudn't able to read file: " + indvlFile)
+			break
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(orderVerFiles)
+	return orderVerFiles, err
 }
 
 func migrationFiles(updown string) []string {
 	files, _ := ioutil.ReadDir("./")
 	var onlyMigFiles []string
 	for _, f := range files {
-		if !f.IsDir() && strings.Contains(f.Name(), "."+config.MigrationOutputFormat+"."+config.MigrationFileExtension) {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), "."+config.MigrationOutputFormat+"."+config.MigrationFileExtension) && strings.HasPrefix(f.Name(), config.MigrationFilePrefix) {
 			onlyMigFiles = append(onlyMigFiles, f.Name())
 		}
 	}
