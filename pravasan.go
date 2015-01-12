@@ -90,18 +90,18 @@ func init() {
 	flag.BoolVar(&flagPassword, "p", false, "database password")
 	flag.BoolVar(&version, "version", false, "print Pravasan version")
 	flag.StringVar(&configOutput, "confOutput", currentConfFileFormat, "config file format: json, xml")
-	flag.StringVar(&dbHostname, "h", "", "database hostname, default: localhost")
+	flag.StringVar(&dbHostname, "h", "localhost", "database hostname, default: localhost")
 	flag.StringVar(&dbName, "d", "", "database name")
-	flag.StringVar(&dbPort, "port", "", "database port, default: 3306")
-	flag.StringVar(&dbType, "dbType", "", "database type, default: mysql")
+	flag.StringVar(&dbPort, "port", "3306", "database port, default: 3306")
+	flag.StringVar(&dbType, "dbType", "mysql", "database type, default: mysql")
 	flag.StringVar(&dbUsername, "u", "", "database username")
-	flag.StringVar(&indexPrefix, "indexPrefix", "", "prefix for creating Indexes, default: idx")
+	flag.StringVar(&indexPrefix, "indexPrefix", "idx", "prefix for creating Indexes, default: idx")
 	flag.StringVar(&indexSuffix, "indexSuffix", "", "suffix for creating Indexes")
-	flag.StringVar(&migDir, "migDir", "", "migration file stored directory, default: ./ ")
-	flag.StringVar(&migFileExtn, "migFileExtn", "", "migration file extension, default: prvsn")
+	flag.StringVar(&migDir, "migDir", "./", "migration file stored directory, default: ./ ")
+	flag.StringVar(&migFileExtn, "migFileExtn", "prvsn", "migration file extension, default: prvsn")
 	flag.StringVar(&migFilePrefix, "migFilePrefix", "", "prefix for migration file")
-	flag.StringVar(&migOutputFormat, "migOutput", "", "current supported format: json, xml & deafult: json")
-	flag.StringVar(&migTableName, "migTableName", "", "migration table name, default: schema_migrations")
+	flag.StringVar(&migOutputFormat, "migOutput", "json", "current supported format: json, xml & deafult: json")
+	flag.StringVar(&migTableName, "migTableName", "schema_migrations", "migration table name, default: schema_migrations")
 	flag.Parse()
 
 	if version {
@@ -488,7 +488,7 @@ func writeToFile(filename string, obj interface{}, format string) {
 
 func createConfigurationFile() {
 	writeToFile("pravasan.conf."+currentConfFileFormat, config, currentConfFileFormat)
-	fmt.Println("Config file created.")
+	fmt.Println("Config file created / updated.")
 }
 
 func printCurrentVersion() {
