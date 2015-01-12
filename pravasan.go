@@ -31,6 +31,12 @@ const (
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
 	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
+	infoText            = "\033[97m[\033[0;36mINFO\033[97m] "
+	resetText           = "\033[0m"
+	runningText         = "\033[97m[\033[33mRUNNING\033[97m] "
+	successText         = "\033[97m[\033[32mSUCCESS\033[97m] "
+	errorText           = "\033[97m[\033[31mERROR\033[97m] "
+	doneText            = "\033[97m[\033[32mDONE\033[97m] "
 )
 
 var (
@@ -41,7 +47,7 @@ var (
 
 func main() {
 	if strings.LastIndex(os.Args[0], "pravasan") < 1 || len(argArray) == 0 {
-		fmt.Println("wrong usage, or no arguments specified")
+		fmt.Println(errorText + "wrong usage, or no arguments specified." + resetText)
 		os.Exit(1)
 	}
 	switch argArray[0] {
@@ -58,8 +64,9 @@ func main() {
 	case "up", "u":
 		migrateUpDown("up")
 	default:
-		panic("No or Wrong Actions provided.")
+		panic(errorText + "No or Wrong Actions provided." + resetText)
 	}
+	fmt.Println(doneText + "Completed." + resetText)
 	os.Exit(1)
 }
 
@@ -342,7 +349,7 @@ func migrateUpDown(updown string) {
 
 	// Actual migration can't happen without having DB Name & DB User, rest can be default.
 	if config.DbName == "" || config.DbUsername == "" {
-		fmt.Println("Either Database Name or Username is not mentioned, or both are missed to mention.")
+		fmt.Println(errorText + "Either Database Name or Username is not mentioned, or both are missed to mention." + resetText)
 		return
 	}
 
@@ -354,9 +361,10 @@ func migrateUpDown(updown string) {
 		force        = false
 	)
 
+	fmt.Println(infoText + "Collecting migration files..." + resetText)
 	files = migrationFiles(updown)
 	if 0 == len(files) {
-		fmt.Println("No files in the directory")
+		fmt.Println("No migration files present.")
 		return
 	}
 
@@ -364,13 +372,13 @@ func migrateUpDown(updown string) {
 		if updown == "down" {
 			reverseCount, err = strconv.Atoi(strings.Replace(argArray[1], "-", "", -1))
 			if err != nil {
-				log.Println("Wrong count to be reversed, only integer values accepted")
+				log.Println(errorText + "Wrong count to be reversed, only integer values accepted." + resetText)
 				log.Fatal(err)
 			}
 		} else if updown == "up" {
 			files, err = checkMigrationFilesExists(argArray[1:len(argArray)])
 			if err != nil {
-				fmt.Println("one of the version number of the file mentioned is wrong.")
+				fmt.Println(errorText + "Any one of the version number of the file mentioned is wrong." + resetText)
 				return
 			}
 			force = true
@@ -384,7 +392,7 @@ func migrateUpDown(updown string) {
 		}
 
 		// Read the content of the file & store into the mm structure
-		fmt.Println("Processing ... " + filename)
+		fmt.Print(runningText + filename + resetText + " - ")
 		bs, err := ioutil.ReadFile(filename)
 		if err != nil {
 			fmt.Println(err)
@@ -423,6 +431,7 @@ func migrateUpDown(updown string) {
 			gdm_pq.ProcessNow(mm, mig, updown, force)
 		}
 		processCount++
+		fmt.Println(successText + filename + " Migrated." + resetText)
 	}
 }
 
@@ -440,7 +449,7 @@ func checkMigrationFilesExists(verFiles []string) (orderVerFiles []string, err e
 		if _, err := os.Stat(indvlFile); err == nil {
 			orderVerFiles = append(orderVerFiles, indvlFile)
 		} else {
-			err = errors.New("coudn't able to read file: " + indvlFile)
+			err = errors.New(errorText + "coudn't able to read file: " + indvlFile + resetText)
 			break
 		}
 	}
@@ -488,11 +497,11 @@ func writeToFile(filename string, obj interface{}, format string) {
 
 func createConfigurationFile() {
 	writeToFile("pravasan.conf."+currentConfFileFormat, config, currentConfFileFormat)
-	fmt.Println("Config file created / updated.")
+	fmt.Println(successText + "Config file created / updated.")
 }
 
 func printCurrentVersion() {
-	fmt.Println("pravasan version " + currentVersion)
+	fmt.Println(infoText + "pravasan version " + currentVersion + resetText)
 }
 
 // checkConfigFileExists loads the configuration if it exists whether it is XML or JSON.
