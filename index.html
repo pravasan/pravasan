@@ -98,12 +98,13 @@
 								<br/>
 								<p style="color:white;">Intend to be used for any programming languages, for any database. <br/>Its still in beta. Testing in progress.<sup>*</sup><br />Written in Go.
 								</p>
+<p><strong><a href="https://github.com/pravasan/pravasan">Star</a></strong> it, <strong><a href="https://github.com/pravasan/pravasan/fork">Fork</a></strong> it, etc., </p> 
 							</header>
 							
 							<footer>
 								<a href="#usage" class="button scrolly">Try it</a>
 							</footer>
-							<div style="font-size:15px;text-align:left;color:white"><br/><br/> &nbsp; <sup>*</sup> Currently only available for MySQL. <a href="https://github.com/pravasan/pravasan#pravasan">Check Here</a> if your database is in our pipeline.</div>
+							<div style="font-size:15px;text-align:left;color:white"><br/><br/> &nbsp; <sup>*</sup> Currently available for MySQL, Postgres. <a href="https://github.com/pravasan/pravasan#pravasan">Check Here</a> if your database is in our pipeline.</div>
 
 						</div>
 						</section>
@@ -116,17 +117,20 @@
 								<h2>Usage</h2>
 							</header>
 							
-							<p>Below are the simple commands which will help you to create the migration file in JSON format.</p>
+							<p>Below are the simple commands which will help you to create the migration file in JSON / XML format.</p>
 
 							<pre style="font-family:Menlo, Monaco, Consolas, 'Courier New', monospace;font-size:12px;padding:5px;margin:0px;background:#C0C0C0;text-align:left;">
-$ ./pravasan add create_table test123 id:int name:string order:int status:bool    # Create JSON Migration File for TABLE Creation
-$ ./pravasan add add_column test123 id:int     # Create JSON Migration file containing Add Column syntax
-$ ./pravasan add drop_column test123 id        # Create JSON Migration file having Drop Column syntax 
-$ ./pravasan create                            # Create `schema_migrations` table
+$ ./pravasan add add_column test123 id:int
+$ ./pravasan add add_index test123 id order name
+$ ./pravasan add create_table test123 id:int name:string order:int status:bool
+$ ./pravasan add drop_column test123 id
+$ ./pravasan add drop_index test123 id order name
+$ ./pravasan add rename_table test123 new_test123
+$ ./pravasan add sql               # to add SQL statements directly.
 
-$ ./pravasan up                                # Execute migration files which is not been executed.
-
-$ ./pravasan down [-1]                         # Revert Migration file which is been executed already.
+$ ./pravasan down [-1]
+$ ./pravasan up
+$ ./pravasan up 20150103174227, 20150103174333
 							</pre>
 
 						</div>
