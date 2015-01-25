@@ -1,5 +1,7 @@
 package migration
 
+var FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
+
 // Config used for general configuration settings for Migration application
 type Config struct {
 	DbHostname             string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`

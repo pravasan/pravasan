@@ -46,13 +46,18 @@ var (
 )
 
 func main() {
+	one_init()
 	if strings.LastIndex(os.Args[0], "pravasan") < 1 || len(argArray) == 0 {
 		fmt.Println(errorText + "wrong usage, or no arguments specified." + resetText)
 		os.Exit(1)
 	}
 	switch argArray[0] {
 	case "add", "a":
-		generateMigration()
+		fn, mm := generateMigration(argArray)
+		fmt.Println(fn)
+		writeToFile(fn, mm, config.MigrationOutputFormat)
+		// os.Exit(0)
+
 	case "create", "c":
 		if len(argArray) > 1 && argArray[1] != "" && argArray[1] == "conf" {
 			createConfigurationFile()
@@ -70,7 +75,7 @@ func main() {
 	os.Exit(1)
 }
 
-func init() {
+func one_init() {
 	// fmt.Println("pravasan init() it runs before other functions")
 
 	checkConfigFileExists(&config)
@@ -112,9 +117,9 @@ func init() {
 	flag.Parse()
 
 	if version {
-		printCurrentVersion()
+		fmt.Println(printCurrentVersion())
 		if len(flag.Args()) == 0 {
-			os.Exit(1)
+			os.Exit(0)
 		}
 	}
 	if flagPassword {
@@ -162,27 +167,27 @@ func createMigration() {
 	}
 }
 
-func generateMigration() {
+func generateMigration(ab []string) (filename string, mm m.Migration) {
 	t := time.Now()
-	mm := m.Migration{}
+	mm = m.Migration{}
 	mm.ID = t.Format(layout)
-	switch argArray[1] {
+	switch ab[1] {
 	case "add_column", "ac":
 		fnAddColumn(&mm.Up)
 		fnDropColumn(&mm.Down)
 	case "add_index", "ai":
 		fnAddIndex(&mm.Up, &mm.Down)
 	case "create_table", "ct":
-		fnCreateTable(&mm.Up)
-		fnDropTable(&mm.Down)
+		fnCreateTable(&mm.Up, ab[2], ab[3:])
+		fnDropTable(&mm.Down, ab[2])
 	case "drop_column", "dc":
 		fnDropColumn(&mm.Up)
 		fnAddColumn(&mm.Down)
 	case "drop_index", "di":
 		fnAddIndex(&mm.Down, &mm.Up)
 	case "drop_table", "dt":
-		fnDropTable(&mm.Up)
-		fnCreateTable(&mm.Down)
+		fnDropTable(&mm.Up, ab[2])
+		fnCreateTable(&mm.Down, ab[2], ab[3:])
 	case "rename_table", "rt":
 		fnRenameTable(&mm.Up, &mm.Down)
 	case "sql", "s":
@@ -195,11 +200,8 @@ func generateMigration() {
 		panic("No or wrong Actions provided.")
 	}
 
-	filename := config.MigrationDirectory + config.MigrationFilePrefix + mm.ID + "." + config.MigrationOutputFormat + "." + config.MigrationFileExtension
-	fmt.Println(filename)
-	writeToFile(filename, mm, config.MigrationOutputFormat)
-
-	os.Exit(1)
+	filename = config.MigrationDirectory + config.MigrationFilePrefix + mm.ID + "." + config.MigrationOutputFormat + "." + config.MigrationFileExtension
+	return
 }
 
 func fnSql(mig *m.Migration) {
@@ -287,18 +289,16 @@ func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown) {
 func fnChangeColumn(mUp *m.UpDown, mDown *m.UpDown) {
 }
 
-func fnCreateTable(mm *m.UpDown) {
-	ct := m.CreateTable{}
-	ct.TableName = argArray[2]
-	fieldArray := argArray[3:len(argArray)]
+func fnCreateTable(mm *m.UpDown, tableName string, fieldArray []string) {
+	ct := m.CreateTable{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := m.Columns{}
-			col.FieldName = split[0][1]
-			col.DataType = split[0][2]
+			col := m.Columns{
+				FieldName: split[0][1],
+				DataType:  split[0][2]}
 			ct.Columns = append(ct.Columns, col)
 		}
 	}
@@ -328,9 +328,8 @@ func fnDropColumn(mm *m.UpDown) {
 	mm.DropColumn = append(mm.DropColumn, dc)
 }
 
-func fnDropTable(mm *m.UpDown) {
-	dt := m.DropTable{}
-	dt.TableName = argArray[2]
+func fnDropTable(mm *m.UpDown, tableName string) {
+	dt := m.DropTable{TableName: tableName}
 	mm.DropTable = append(mm.DropTable, dt)
 }
 
@@ -500,8 +499,8 @@ func createConfigurationFile() {
 	fmt.Println(successText + "Config file created / updated.")
 }
 
-func printCurrentVersion() {
-	fmt.Println(infoText + "pravasan version " + currentVersion + resetText)
+func printCurrentVersion() string {
+	return infoText + "pravasan version " + currentVersion + resetText
 }
 
 // checkConfigFileExists loads the configuration if it exists whether it is XML or JSON.
