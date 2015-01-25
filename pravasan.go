@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	currentVersion = "0.2"
+	currentVersion = "0.3"
 	layout         = "20060102150405"
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
@@ -173,23 +173,23 @@ func generateMigration(ab []string) (filename string, mm m.Migration) {
 	mm.ID = t.Format(layout)
 	switch ab[1] {
 	case "add_column", "ac":
-		fnAddColumn(&mm.Up)
-		fnDropColumn(&mm.Down)
+		fnAddColumn(&mm.Up, ab[2], ab[3:])
+		fnDropColumn(&mm.Down, ab[2], ab[3:])
 	case "add_index", "ai":
-		fnAddIndex(&mm.Up, &mm.Down)
+		fnAddIndex(&mm.Up, &mm.Down, ab[2], ab[3:])
 	case "create_table", "ct":
 		fnCreateTable(&mm.Up, ab[2], ab[3:])
 		fnDropTable(&mm.Down, ab[2])
 	case "drop_column", "dc":
-		fnDropColumn(&mm.Up)
-		fnAddColumn(&mm.Down)
+		fnDropColumn(&mm.Up, ab[2], ab[3:])
+		fnAddColumn(&mm.Down, ab[2], ab[3:])
 	case "drop_index", "di":
-		fnAddIndex(&mm.Down, &mm.Up)
+		fnAddIndex(&mm.Down, &mm.Up, ab[2], ab[3:])
 	case "drop_table", "dt":
 		fnDropTable(&mm.Up, ab[2])
 		fnCreateTable(&mm.Down, ab[2], ab[3:])
 	case "rename_table", "rt":
-		fnRenameTable(&mm.Up, &mm.Down)
+		fnRenameTable(&mm.Up, &mm.Down, ab[2], ab[3])
 	case "sql", "s":
 		fnSql(&mm)
 	// case "change_column", "cc":
@@ -199,7 +199,6 @@ func generateMigration(ab []string) (filename string, mm m.Migration) {
 	default:
 		panic("No or wrong Actions provided.")
 	}
-
 	filename = config.MigrationDirectory + config.MigrationFilePrefix + mm.ID + "." + config.MigrationOutputFormat + "." + config.MigrationFileExtension
 	return
 }
@@ -237,18 +236,16 @@ func fnSql(mig *m.Migration) {
 	mig.Down.Sql = strings.TrimSpace(localSql)
 }
 
-func fnAddColumn(mm *m.UpDown) {
-	ac := m.AddColumn{}
-	ac.TableName = argArray[2]
-	fieldArray := argArray[3:len(argArray)]
+func fnAddColumn(mm *m.UpDown, tableName string, fieldArray []string) {
+	ac := m.AddColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := m.Columns{}
-			col.FieldName = split[0][1]
-			col.DataType = split[0][2]
+			col := m.Columns{
+				FieldName: split[0][1],
+				DataType:  split[0][2]}
 			ac.Columns = append(ac.Columns, col)
 		} else {
 			ac = m.AddColumn{}
@@ -257,12 +254,9 @@ func fnAddColumn(mm *m.UpDown) {
 	mm.AddColumn = append(mm.AddColumn, ac)
 }
 
-func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown) {
-	ai := m.AddIndex{}
-	di := m.DropIndex{}
-	ai.TableName = argArray[2]
-	di.TableName = argArray[2]
-	fieldArray := argArray[3:len(argArray)]
+func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown, tableName string, fieldArray []string) {
+	ai := m.AddIndex{TableName: tableName}
+	di := m.DropIndex{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
@@ -305,10 +299,8 @@ func fnCreateTable(mm *m.UpDown, tableName string, fieldArray []string) {
 	mm.CreateTable = append(mm.CreateTable, ct)
 }
 
-func fnDropColumn(mm *m.UpDown) {
-	dc := m.DropColumn{}
-	dc.TableName = argArray[2]
-	fieldArray := argArray[3:len(argArray)]
+func fnDropColumn(mm *m.UpDown, tableName string, fieldArray []string) {
+	dc := m.DropColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
@@ -321,8 +313,6 @@ func fnDropColumn(mm *m.UpDown) {
 		} else if fieldArray[key] != "" {
 			col.FieldName = fieldArray[key]
 			dc.Columns = append(dc.Columns, col)
-		} else {
-			dc = m.DropColumn{}
 		}
 	}
 	mm.DropColumn = append(mm.DropColumn, dc)
@@ -333,14 +323,13 @@ func fnDropTable(mm *m.UpDown, tableName string) {
 	mm.DropTable = append(mm.DropTable, dt)
 }
 
-func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown) {
-	rt := m.RenameTable{}
-	rt.OldTableName = argArray[2]
-	rt.NewTableName = argArray[3]
-	mUp.RenameTable = append(mUp.RenameTable, rt)
-	rt.OldTableName = argArray[3]
-	rt.NewTableName = argArray[2]
-	mDown.RenameTable = append(mDown.RenameTable, rt)
+func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown, srcTableName string, destTablename string) {
+	mUp.RenameTable = append(mUp.RenameTable, m.RenameTable{
+		OldTableName: srcTableName,
+		NewTableName: destTablename})
+	mDown.RenameTable = append(mDown.RenameTable, m.RenameTable{
+		OldTableName: destTablename,
+		NewTableName: srcTableName})
 }
 
 // migrateUpDown - used to perform the Action Migration either Up or Down & chooses the DB too.
