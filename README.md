@@ -17,7 +17,12 @@ Simple Migration tool intend to be used for any languages, for any db.
 * [All Features / Bugs](#all-features--bugs)
 
 ##Install
-(in progressssss......)
+
+1. Choose proper OS & Download from http://pravasan.github.io/pravasan/#download
+2. Unzip / Untar the file downloaded 
+3. For some OS its default but some it needs to be explicit add 
+```chmod +x pravasan_*```
+4. Look at the below Usage and start using it from the folder where you would like to execute & store migration files.
 
 ##Usage
 
@@ -71,17 +76,17 @@ pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 up 201501
 ```
 
 ##Work in progress are:
-- [ ] Support for SQLite, Oracle, MongoDB, etc.,
+- [ ] Support for Oracle, MongoDB, etc.,
 
 ##High Level Features
 - [x] Create & read from Conf file (XML / JSON)
 - [x] Output in XML, JSON format
 - [x] Support for Direct SQL Statements 
-- [x] Support for MySQL, Postgres
+- [x] Support for MySQL, Postgres, SQLite
 
 ##All Features / Bugs
 - [x] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)
-- [ ] [v0.2](https://github.com/pravasan/pravasan/milestones/v0.2)
+- [x] [v0.2](https://github.com/pravasan/pravasan/milestones/v0.2)
 - [ ] [v0.3](https://github.com/pravasan/pravasan/milestones/v0.3)
 - [ ] [v1.0](https://github.com/pravasan/pravasan/milestones/v1.0)
 - [ ] [v2.0](https://github.com/pravasan/pravasan/milestones/v2.0)
