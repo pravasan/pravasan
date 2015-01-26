@@ -40,16 +40,38 @@ const (
 )
 
 var (
+	flagPassword    = flag.Bool("p", false, "database password")
+	version         = flag.Bool("version", false, "print Pravasan version")
+	configOutput    = flag.String("confOutput", currentConfFileFormat, "config file format: json, xml")
+	dbHostname      = flag.String("h", "localhost", "database hostname, default: localhost")
+	dbName          = flag.String("d", "", "database name")
+	dbPort          = flag.String("port", "3306", "database port, default: 3306")
+	dbType          = flag.String("dbType", "mysql", "database type, default: mysql")
+	dbUsername      = flag.String("u", "", "database username")
+	indexPrefix     = flag.String("indexPrefix", "idx", "prefix for creating Indexes, default: idx")
+	indexSuffix     = flag.String("indexSuffix", "", "suffix for creating Indexes")
+	migDir          = flag.String("migDir", "./", "migration file stored directory, default: ./ ")
+	migFileExtn     = flag.String("migFileExtn", "prvsn", "migration file extension, default: prvsn")
+	migFilePrefix   = flag.String("migFilePrefix", "", "prefix for migration file")
+	migOutputFormat = flag.String("migOutput", "json", "current supported format: json, xml & deafult: json")
+	migTableName    = flag.String("migTableName", "schema_migrations", "migration table name, default: schema_migrations")
+
 	argArray              []string
 	config                m.Config
 	currentConfFileFormat = "json"
 )
 
 func main() {
-	one_init()
+	initializeDefaults()
+
 	if strings.LastIndex(os.Args[0], "pravasan") < 1 || len(argArray) == 0 {
 		fmt.Println(errorText + "wrong usage, or no arguments specified." + resetText)
-		os.Exit(1)
+		return
+	}
+	_, err := migrationDirectoryExists()
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 	switch argArray[0] {
 	case "add", "a":
@@ -75,71 +97,43 @@ func main() {
 	os.Exit(1)
 }
 
-func one_init() {
-	// fmt.Println("pravasan init() it runs before other functions")
+func migrationDirectoryExists() (string, error) {
+	if _, err := os.Stat(config.MigrationDirectory); err == nil {
+		return config.MigrationDirectory, nil
+	}
+	e := errors.New(config.MigrationDirectory + " doesn't exists.")
+	return config.MigrationDirectory, e
+}
 
+func initializeDefaults() {
 	checkConfigFileExists(&config)
 
-	var (
-		flagPassword = false
-		version      = false
-
-		configOutput    string
-		dbHostname      string
-		dbName          string
-		dbPort          string
-		dbType          string
-		dbUsername      string
-		indexPrefix     string
-		indexSuffix     string
-		migDir          string
-		migFileExtn     string
-		migFilePrefix   string
-		migOutputFormat string
-		migTableName    string
-	)
-
-	flag.BoolVar(&flagPassword, "p", false, "database password")
-	flag.BoolVar(&version, "version", false, "print Pravasan version")
-	flag.StringVar(&configOutput, "confOutput", currentConfFileFormat, "config file format: json, xml")
-	flag.StringVar(&dbHostname, "h", "localhost", "database hostname, default: localhost")
-	flag.StringVar(&dbName, "d", "", "database name")
-	flag.StringVar(&dbPort, "port", "3306", "database port, default: 3306")
-	flag.StringVar(&dbType, "dbType", "mysql", "database type, default: mysql")
-	flag.StringVar(&dbUsername, "u", "", "database username")
-	flag.StringVar(&indexPrefix, "indexPrefix", "idx", "prefix for creating Indexes, default: idx")
-	flag.StringVar(&indexSuffix, "indexSuffix", "", "suffix for creating Indexes")
-	flag.StringVar(&migDir, "migDir", "./", "migration file stored directory, default: ./ ")
-	flag.StringVar(&migFileExtn, "migFileExtn", "prvsn", "migration file extension, default: prvsn")
-	flag.StringVar(&migFilePrefix, "migFilePrefix", "", "prefix for migration file")
-	flag.StringVar(&migOutputFormat, "migOutput", "json", "current supported format: json, xml & deafult: json")
-	flag.StringVar(&migTableName, "migTableName", "schema_migrations", "migration table name, default: schema_migrations")
 	flag.Parse()
 
-	if version {
+	if *version {
 		fmt.Println(printCurrentVersion())
 		if len(flag.Args()) == 0 {
 			os.Exit(0)
 		}
 	}
-	if flagPassword {
+	if *flagPassword {
 		fmt.Printf("Enter DB Password : ")
 		pw := gopass.GetPasswd()
 		config.DbPassword = string(pw)
 	}
 
-	config.DbHostname = updateConfigValue(config.DbHostname, dbHostname, "localhost")
-	config.DbName = updateConfigValue(config.DbName, dbName, "")
-	config.DbPort = updateConfigValue(config.DbPort, dbPort, "3306")
-	config.DbType = updateConfigValue(config.DbType, dbType, "mysql")
-	config.DbUsername = updateConfigValue(config.DbUsername, dbUsername, "")
-	config.IndexPrefix = updateConfigValue(config.IndexPrefix, indexPrefix, "idx")
-	config.IndexSuffix = updateConfigValue(config.IndexSuffix, indexSuffix, "")
-	config.MigrationDirectory = updateConfigValue(config.MigrationDirectory, strings.Trim(migDir, "/")+"/", "./")
-	config.MigrationFileExtension = updateConfigValue(config.MigrationFileExtension, migFileExtn, "prvsn")
-	config.MigrationFilePrefix = updateConfigValue(config.MigrationFilePrefix, migFilePrefix, "")
-	config.MigrationOutputFormat = updateConfigValue(config.MigrationOutputFormat, strings.ToLower(migOutputFormat), "json")
-	config.MigrationTableName = updateConfigValue(config.MigrationTableName, strings.ToLower(migTableName), "schema_migrations")
+	config.DbHostname = updateConfigValue(config.DbHostname, *dbHostname, "localhost")
+	config.DbName = updateConfigValue(config.DbName, *dbName, "")
+	config.DbPort = updateConfigValue(config.DbPort, *dbPort, "3306")
+	config.DbType = updateConfigValue(config.DbType, *dbType, "mysql")
+	config.DbUsername = updateConfigValue(config.DbUsername, *dbUsername, "")
+	config.IndexPrefix = updateConfigValue(config.IndexPrefix, *indexPrefix, "idx")
+	config.IndexSuffix = updateConfigValue(config.IndexSuffix, *indexSuffix, "")
+	config.MigrationDirectory = updateConfigValue(config.MigrationDirectory, strings.Trim(*migDir, "/")+"/", "./")
+	config.MigrationFileExtension = updateConfigValue(config.MigrationFileExtension, *migFileExtn, "prvsn")
+	config.MigrationFilePrefix = updateConfigValue(config.MigrationFilePrefix, *migFilePrefix, "")
+	config.MigrationOutputFormat = updateConfigValue(config.MigrationOutputFormat, strings.ToLower(*migOutputFormat), "json")
+	config.MigrationTableName = updateConfigValue(config.MigrationTableName, strings.ToLower(*migTableName), "schema_migrations")
 
 	argArray = flag.Args()
 }
