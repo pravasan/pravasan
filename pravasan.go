@@ -23,6 +23,7 @@ import (
 
 	gdm_my "github.com/pravasan/pravasan/mysql"
 	gdm_pq "github.com/pravasan/pravasan/postgres"
+	gdm_sl "github.com/pravasan/pravasan/sqlite3"
 )
 
 const (
@@ -38,6 +39,13 @@ const (
 	errorText           = "\033[97m[\033[31mERROR\033[97m] "
 	doneText            = "\033[97m[\033[32mDONE\033[97m] "
 )
+
+type MigInterface interface {
+	Init(m.Config)
+	GetLastMigrationNo() string
+	CreateMigrationTable()
+	ProcessNow(m.Migration, m.UpDown, string, bool)
+}
 
 var (
 	flagPassword    = flag.Bool("p", false, "database password")
@@ -78,8 +86,6 @@ func main() {
 		fn, mm := generateMigration(argArray)
 		fmt.Println(fn)
 		writeToFile(fn, mm, config.MigrationOutputFormat)
-		// os.Exit(0)
-
 	case "create", "c":
 		if len(argArray) > 1 && argArray[1] != "" && argArray[1] == "conf" {
 			createConfigurationFile()
@@ -134,6 +140,12 @@ func initializeDefaults() {
 	config.MigrationFilePrefix = updateConfigValue(config.MigrationFilePrefix, *migFilePrefix, "")
 	config.MigrationOutputFormat = updateConfigValue(config.MigrationOutputFormat, strings.ToLower(*migOutputFormat), "json")
 	config.MigrationTableName = updateConfigValue(config.MigrationTableName, strings.ToLower(*migTableName), "schema_migrations")
+	if *dbType == "sqlite3" {
+		config.DbHostname = ""
+		config.DbPort = ""
+		config.DbUsername = ""
+		config.DbPassword = ""
+	}
 
 	argArray = flag.Args()
 }
@@ -151,39 +163,50 @@ func updateConfigValue(originalValue string, overwriteValue string, defValue str
 	return originalValue
 }
 
-func createMigration() {
-	if config.DbType == "mysql" {
-		gdm_my.Init(config)
-		gdm_my.CreateMigrationTable()
-	} else {
-		gdm_pq.Init(config)
-		gdm_pq.CreateMigrationTable()
+func setDB() (mi MigInterface) {
+	switch config.DbType {
+	case "postgres":
+		midb := gdm_pq.PostgresStruct{}
+		mi = MigInterface(midb)
+	case "sqlite3":
+		midb := gdm_sl.SQLiteStruct{}
+		mi = MigInterface(midb)
+	default:
+		midb := gdm_my.MySQLStruct{}
+		mi = MigInterface(midb)
 	}
+	mi.Init(config)
+	return mi
 }
 
-func generateMigration(ab []string) (filename string, mm m.Migration) {
+func createMigration() {
+	abc := setDB()
+	abc.CreateMigrationTable()
+}
+
+func generateMigration(argsArray []string) (filename string, mm m.Migration) {
 	t := time.Now()
 	mm = m.Migration{}
 	mm.ID = t.Format(layout)
-	switch ab[1] {
+	switch argsArray[1] {
 	case "add_column", "ac":
-		fnAddColumn(&mm.Up, ab[2], ab[3:])
-		fnDropColumn(&mm.Down, ab[2], ab[3:])
+		fnAddColumn(&mm.Up, argsArray[2], argsArray[3:])
+		fnDropColumn(&mm.Down, argsArray[2], argsArray[3:])
 	case "add_index", "ai":
-		fnAddIndex(&mm.Up, &mm.Down, ab[2], ab[3:])
+		fnAddIndex(&mm.Up, &mm.Down, argsArray[2], argsArray[3:])
 	case "create_table", "ct":
-		fnCreateTable(&mm.Up, ab[2], ab[3:])
-		fnDropTable(&mm.Down, ab[2])
+		fnCreateTable(&mm.Up, argsArray[2], argsArray[3:])
+		fnDropTable(&mm.Down, argsArray[2])
 	case "drop_column", "dc":
-		fnDropColumn(&mm.Up, ab[2], ab[3:])
-		fnAddColumn(&mm.Down, ab[2], ab[3:])
+		fnDropColumn(&mm.Up, argsArray[2], argsArray[3:])
+		fnAddColumn(&mm.Down, argsArray[2], argsArray[3:])
 	case "drop_index", "di":
-		fnAddIndex(&mm.Down, &mm.Up, ab[2], ab[3:])
+		fnAddIndex(&mm.Down, &mm.Up, argsArray[2], argsArray[3:])
 	case "drop_table", "dt":
-		fnDropTable(&mm.Up, ab[2])
-		fnCreateTable(&mm.Down, ab[2], ab[3:])
+		fnDropTable(&mm.Up, argsArray[2])
+		fnCreateTable(&mm.Down, argsArray[2], argsArray[3:])
 	case "rename_table", "rt":
-		fnRenameTable(&mm.Up, &mm.Down, ab[2], ab[3])
+		fnRenameTable(&mm.Up, &mm.Down, argsArray[2], argsArray[3])
 	case "sql", "s":
 		fnSql(&mm)
 	// case "change_column", "cc":
@@ -330,7 +353,7 @@ func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown, srcTableName string, destTabl
 func migrateUpDown(updown string) {
 
 	// Actual migration can't happen without having DB Name & DB User, rest can be default.
-	if config.DbName == "" || config.DbUsername == "" {
+	if config.DbName == "" || (config.DbUsername == "" && *dbType != "sqlite3") {
 		fmt.Println(errorText + "Either Database Name or Username is not mentioned, or both are missed to mention." + resetText)
 		return
 	}
@@ -400,17 +423,18 @@ func migrateUpDown(updown string) {
 		}
 
 		if config.DbType == "mysql" {
-			gdm_my.Init(config)
-			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
+			abc := setDB()
+			if updown == "down" && mm.ID > abc.GetLastMigrationNo() {
 				continue
 			}
-			gdm_my.ProcessNow(mm, mig, updown, force)
+			// gdm_my.ProcessNow(mm, mig, updown, force)
+			abc.ProcessNow(mm, mig, updown, force)
 		} else {
-			gdm_pq.Init(config)
-			if updown == "down" && mm.ID > gdm_my.GetLastMigrationNo() {
+			abc := setDB()
+			if updown == "down" && mm.ID > abc.GetLastMigrationNo() {
 				continue
 			}
-			gdm_pq.ProcessNow(mm, mig, updown, force)
+			abc.ProcessNow(mm, mig, updown, force)
 		}
 		processCount++
 		fmt.Println(successText + filename + " Migrated." + resetText)

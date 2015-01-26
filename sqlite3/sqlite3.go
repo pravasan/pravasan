@@ -1,4 +1,4 @@
-package mysql
+package sqlite3
 
 import (
 	"database/sql"
@@ -11,11 +11,11 @@ import (
 	m "github.com/pravasan/pravasan/migration"
 
 	// #TODO need to write comment why use "_"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	bTQ                = "`" // bTQ = backTickQuote
+	bTQ                = "" // bTQ = backTickQuote
 	Db                 *sql.DB
 	localConfig        m.Config
 	localUpDown        string
@@ -24,24 +24,24 @@ var (
 	err                error
 )
 
-type MySQLStruct struct {
+type SQLiteStruct struct {
 }
 
-func (ms MySQLStruct) Init(c m.Config) {
+func (sl SQLiteStruct) Init(c m.Config) {
 	// This can be useful to check for version and any other dependencies etc.,
-	// fmt.Println("mysql init() it runs before other functions")
-	Db, _ = sql.Open("mysql", c.DbUsername+":"+c.DbPassword+"@/"+c.DbName)
+	// fmt.Println("sqlite init() it runs before other functions")
+	Db, _ = sql.Open("sqlite3", c.DbName)
 	migrationTableName = c.MigrationTableName
 
 	localConfig = c
 }
 
 // // Init is called to initiate the connection to check and do some activities
-// func (ms MySQLStruct) Init(c m.Config) {
+// func (sl SQLiteStruct) Init(c m.Config) {
 // }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
-func (ms MySQLStruct) GetLastMigrationNo() string {
+func (sl SQLiteStruct) GetLastMigrationNo() string {
 	maxVersion := ""
 	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ
 	q, err := Db.Query(query)
@@ -57,8 +57,9 @@ func (ms MySQLStruct) GetLastMigrationNo() string {
 }
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
-func (ms MySQLStruct) CreateMigrationTable() {
-	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15))"
+func (sl SQLiteStruct) CreateMigrationTable() {
+	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15));"
+	fmt.Println(query)
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -69,9 +70,9 @@ func (ms MySQLStruct) CreateMigrationTable() {
 }
 
 // ProcessNow is used to run the actual migraition whether it is UP or DOWN.
-func (ms MySQLStruct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
+func (sl SQLiteStruct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
 	if updown == "up" {
-		if force == false && lm.ID <= ms.GetLastMigrationNo() {
+		if force == false && lm.ID <= sl.GetLastMigrationNo() {
 			return
 		}
 		if force == true && checkMigrationExecutedForID(lm.ID) {
@@ -178,7 +179,7 @@ func directSQL(query string) {
 }
 
 func execQuery(query string) {
-	fmt.Println("MySQL---" + query)
+	fmt.Println("SQLite---" + query)
 	q, err := Db.Query(query)
 	if err != nil {
 		log.Fatal(err)

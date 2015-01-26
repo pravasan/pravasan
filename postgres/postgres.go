@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// All global variable declartion done here.
 var (
 	bTQ                = "\"" // bTQ = backTickQuote
 	Db                 *sql.DB
@@ -22,26 +21,31 @@ var (
 	localUpDown        string
 	migrationTableName string
 	workingVersion     string
+	err                error
 )
 
-// Init is called to initiate the connection to check and do some activities
-func Init(c m.Config) {
-	var err error
+type PostgresStruct struct {
+}
+
+func (ps PostgresStruct) Init(c m.Config) {
+	// This can be useful to check for version and any other dependencies etc.,
+	// fmt.Println("postgres init() it runs before other functions")
 	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
 	migrationTableName = c.MigrationTableName
+
 	localConfig = c
 }
-func init() {
-	// This can be useful to check for version and any other dependencies etc.,
-	// fmt.Println("mysql init() it runs before other functions")
-}
+
+// // Init is called to initiate the connection to check and do some activities
+// func (ps PostgresStruct) Init(c m.Config) {
+// }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
-func GetLastMigrationNo() string {
-	var maxVersion = ""
+func (ps PostgresStruct) GetLastMigrationNo() string {
+	maxVersion := ""
 	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -56,7 +60,7 @@ func GetLastMigrationNo() string {
 }
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
-func CreateMigrationTable() {
+func (ps PostgresStruct) CreateMigrationTable() {
 	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15))"
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -67,53 +71,10 @@ func CreateMigrationTable() {
 	}
 }
 
-func updateMigrationTable() {
-	var query string
-	if localUpDown == "up" {
-		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(" + bTQ + "version" + bTQ + ") VALUES ('" + workingVersion + "')"
-	} else {
-		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + workingVersion + "'"
-	}
-	q, err := Db.Query(query)
-	defer q.Close()
-	if err != nil {
-		log.Println("not able to add version to the existing migration table")
-		log.Fatal(err)
-	}
-}
-
-func checkMigrationExecutedForID(id string) bool {
-	var version = ""
-	query := "SELECT " + bTQ + "version" + bTQ + " FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + id + "'"
-	q, err := Db.Query(query)
-	defer q.Close()
-	if err != nil {
-		log.Println("couldn't able to execute the check version query...")
-		log.Fatal(err)
-	} else {
-		q.Next()
-		q.Scan(&version)
-	}
-	if version == "" {
-		return false
-	}
-	return true
-}
-
-func dataTypeConversion(dt string) string {
-	switch dt {
-	case "string":
-		return "VARCHAR(255)"
-	case "int":
-		return "INTEGER"
-	}
-	return dt
-}
-
 // ProcessNow is used to run the actual migraition whether it is UP or DOWN.
-func ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
+func (ps PostgresStruct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
 	if updown == "up" {
-		if force == false && lm.ID <= GetLastMigrationNo() {
+		if force == false && lm.ID <= ps.GetLastMigrationNo() {
 			return
 		}
 		if force == true && checkMigrationExecutedForID(lm.ID) {
@@ -171,13 +132,56 @@ func ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
 	}
 }
 
+func updateMigrationTable() {
+	var query string
+	if localUpDown == "up" {
+		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(" + bTQ + "version" + bTQ + ") VALUES ('" + workingVersion + "')"
+	} else {
+		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + workingVersion + "'"
+	}
+	q, err := Db.Query(query)
+	defer q.Close()
+	if err != nil {
+		log.Println("not able to add version to the existing migration table")
+		log.Fatal(err)
+	}
+}
+
+func checkMigrationExecutedForID(id string) bool {
+	var version = ""
+	query := "SELECT " + bTQ + "version" + bTQ + " FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + id + "'"
+	q, err := Db.Query(query)
+	defer q.Close()
+	if err != nil {
+		log.Println("couldn't able to execute the check version query...")
+		log.Fatal(err)
+	} else {
+		q.Next()
+		q.Scan(&version)
+	}
+	if version == "" {
+		return false
+	}
+	return true
+}
+
+func dataTypeConversion(dt string) string {
+	switch dt {
+	case "string":
+		return "VARCHAR(255)"
+	case "int":
+		return "INTEGER"
+	}
+	return dt
+}
+
 func directSQL(query string) {
 	execQuery(query)
 	return
 }
 
 func execQuery(query string) {
-	fmt.Println("MySQL---" + query)
+	fmt.Println("Postgres---" + query)
 	q, err := Db.Query(query)
 	if err != nil {
 		log.Fatal(err)
