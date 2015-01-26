@@ -15,7 +15,9 @@ import (
 )
 
 var (
-	bTQ                = "\"" // bTQ = backTickQuote
+	bTQ = "\"" // bTQ = backTickQuote
+
+	// Db - Creating global of type *sql.DB
 	Db                 *sql.DB
 	localConfig        m.Config
 	localUpDown        string
@@ -24,10 +26,12 @@ var (
 	err                error
 )
 
-type PostgresStruct struct {
+//Struct #TODO need to write some comment & need to write different name instead of Struct
+type Struct struct {
 }
 
-func (ps PostgresStruct) Init(c m.Config) {
+// Init is called to initiate the connection to check and do some activities
+func (s Struct) Init(c m.Config) {
 	// This can be useful to check for version and any other dependencies etc.,
 	// fmt.Println("postgres init() it runs before other functions")
 	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
@@ -39,12 +43,8 @@ func (ps PostgresStruct) Init(c m.Config) {
 	localConfig = c
 }
 
-// // Init is called to initiate the connection to check and do some activities
-// func (ps PostgresStruct) Init(c m.Config) {
-// }
-
 // GetLastMigrationNo to get what is the last migration it has executed.
-func (ps PostgresStruct) GetLastMigrationNo() string {
+func (s Struct) GetLastMigrationNo() string {
 	maxVersion := ""
 	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ
 	q, err := Db.Query(query)
@@ -60,7 +60,7 @@ func (ps PostgresStruct) GetLastMigrationNo() string {
 }
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
-func (ps PostgresStruct) CreateMigrationTable() {
+func (s Struct) CreateMigrationTable() {
 	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15))"
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -72,9 +72,9 @@ func (ps PostgresStruct) CreateMigrationTable() {
 }
 
 // ProcessNow is used to run the actual migraition whether it is UP or DOWN.
-func (ps PostgresStruct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
+func (s Struct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
 	if updown == "up" {
-		if force == false && lm.ID <= ps.GetLastMigrationNo() {
+		if force == false && lm.ID <= s.GetLastMigrationNo() {
 			return
 		}
 		if force == true && checkMigrationExecutedForID(lm.ID) {

@@ -40,6 +40,7 @@ const (
 	doneText            = "\033[97m[\033[32mDONE\033[97m] "
 )
 
+// MigInterface #TODO need to write some comment
 type MigInterface interface {
 	Init(m.Config)
 	GetLastMigrationNo() string
@@ -166,13 +167,13 @@ func updateConfigValue(originalValue string, overwriteValue string, defValue str
 func setDB() (mi MigInterface) {
 	switch config.DbType {
 	case "postgres":
-		midb := gdm_pq.PostgresStruct{}
+		midb := gdm_pq.Struct{}
 		mi = MigInterface(midb)
 	case "sqlite3":
-		midb := gdm_sl.SQLiteStruct{}
+		midb := gdm_sl.Struct{}
 		mi = MigInterface(midb)
 	default:
-		midb := gdm_my.MySQLStruct{}
+		midb := gdm_my.Struct{}
 		mi = MigInterface(midb)
 	}
 	mi.Init(config)
