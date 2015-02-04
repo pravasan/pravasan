@@ -1,4 +1,4 @@
-package migration
+package main
 
 // Config used for general configuration settings for Migration application
 type Config struct {
@@ -15,6 +15,7 @@ type Config struct {
 	MigrationFilePrefix    string `xml:"MigrationFilePrefix,omitempty" json:"MigrationFilePrefix,omitempty"`
 	MigrationOutputFormat  string `xml:"MigrationOutputFormat,omitempty" json:"MigrationOutputFormat,omitempty"`
 	MigrationTableName     string `xml:"MigrationTableName,omitempty" json:"MigrationTableName,omitempty"`
+	StoreDirectSQL         string `xml:"StoreDirectSQL,omitempty" json:"StoreDirectSQL,omitempty"`
 }
 
 // Migration structure is combination of Up / Down structure.

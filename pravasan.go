@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -18,12 +19,6 @@ import (
 	"time"
 
 	"github.com/howeyc/gopass"
-
-	m "github.com/pravasan/pravasan/migration"
-
-	gdm_my "github.com/pravasan/pravasan/mysql"
-	gdm_pq "github.com/pravasan/pravasan/postgres"
-	gdm_sl "github.com/pravasan/pravasan/sqlite3"
 )
 
 const (
@@ -42,15 +37,16 @@ const (
 
 // MigInterface #TODO need to write some comment
 type MigInterface interface {
-	Init(m.Config)
+	Init(Config)
 	GetLastMigrationNo() string
 	CreateMigrationTable()
-	ProcessNow(m.Migration, m.UpDown, string, bool)
+	ProcessNow(Migration, UpDown, string, bool)
 }
 
 var (
 	flagPassword    = flag.Bool("p", false, "database password")
 	version         = flag.Bool("version", false, "print Pravasan version")
+	storeDirectSQL  = flag.Bool("storeDirectSQL", false, "Store SQL in migration file instead of XML / JSON")
 	configOutput    = flag.String("confOutput", currentConfFileFormat, "config file format: json, xml")
 	dbHostname      = flag.String("h", "localhost", "database hostname, default: localhost")
 	dbName          = flag.String("d", "", "database name")
@@ -66,8 +62,19 @@ var (
 	migTableName    = flag.String("migTableName", "schema_migrations", "migration table name, default: schema_migrations")
 
 	argArray              []string
-	config                m.Config
+	config                Config
 	currentConfFileFormat = "json"
+	m                     Migration
+	Db                    *sql.DB
+	localConfig           Config
+	localUpDown           string
+	migrationTableName    string
+	workingVersion        string
+	err                   error
+
+	gdmMy MySQLStruct
+	gdmPq PostgresStruct
+	gdmSl SQLite3Struct
 )
 
 func main() {
@@ -129,6 +136,10 @@ func initializeDefaults() {
 		config.DbPassword = string(pw)
 	}
 
+	if *storeDirectSQL {
+		config.StoreDirectSQL = "true"
+	}
+
 	config.DbHostname = updateConfigValue(config.DbHostname, *dbHostname, "localhost")
 	config.DbName = updateConfigValue(config.DbName, *dbName, "")
 	config.DbPort = updateConfigValue(config.DbPort, *dbPort, "3306")
@@ -167,14 +178,14 @@ func updateConfigValue(originalValue string, overwriteValue string, defValue str
 func setDB() (mi MigInterface) {
 	switch config.DbType {
 	case "postgres":
-		midb := gdm_pq.Struct{}
-		mi = MigInterface(midb)
+		// midb := gdmPq
+		mi = MigInterface(gdmPq)
 	case "sqlite3":
-		midb := gdm_sl.Struct{}
-		mi = MigInterface(midb)
+		// midb := gdmSl{}
+		mi = MigInterface(gdmSl)
 	default:
-		midb := gdm_my.Struct{}
-		mi = MigInterface(midb)
+		// midb := gdmMy{}
+		mi = MigInterface(gdmMy)
 	}
 	mi.Init(config)
 	return mi
@@ -185,9 +196,9 @@ func createMigration() {
 	abc.CreateMigrationTable()
 }
 
-func generateMigration(argsArray []string) (filename string, mm m.Migration) {
+func generateMigration(argsArray []string) (filename string, mm Migration) {
 	t := time.Now()
-	mm = m.Migration{}
+	// mm = m.Migration{}
 	mm.ID = t.Format(layout)
 	switch argsArray[1] {
 	case "add_column", "ac":
@@ -221,7 +232,7 @@ func generateMigration(argsArray []string) (filename string, mm m.Migration) {
 	return
 }
 
-func fnSql(mig *m.Migration) {
+func fnSql(mig *Migration) {
 	fmt.Println("Hint : Type as many lines as you want, when you want to finish ^D (non Windows) or ^X (Windows)")
 	var fp *os.File
 	fp = os.Stdin
@@ -254,31 +265,31 @@ func fnSql(mig *m.Migration) {
 	mig.Down.Sql = strings.TrimSpace(localSql)
 }
 
-func fnAddColumn(mm *m.UpDown, tableName string, fieldArray []string) {
-	ac := m.AddColumn{TableName: tableName}
+func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) {
+	ac := AddColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := m.Columns{
+			col := Columns{
 				FieldName: split[0][1],
 				DataType:  split[0][2]}
 			ac.Columns = append(ac.Columns, col)
 		} else {
-			ac = m.AddColumn{}
+			ac = AddColumn{}
 		}
 	}
 	mm.AddColumn = append(mm.AddColumn, ac)
 }
 
-func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown, tableName string, fieldArray []string) {
-	ai := m.AddIndex{TableName: tableName}
-	di := m.DropIndex{TableName: tableName}
+func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []string) {
+	ai := AddIndex{TableName: tableName}
+	di := DropIndex{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
-		col := m.Columns{}
+		col := Columns{}
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
@@ -290,25 +301,25 @@ func fnAddIndex(mUp *m.UpDown, mDown *m.UpDown, tableName string, fieldArray []s
 			ai.Columns = append(ai.Columns, col)
 			di.Columns = append(di.Columns, col)
 		} else {
-			ai = m.AddIndex{}
-			di = m.DropIndex{}
+			ai = AddIndex{}
+			di = DropIndex{}
 		}
 	}
 	mUp.AddIndex = append(mUp.AddIndex, ai)
 	mDown.DropIndex = append(mDown.DropIndex, di)
 }
 
-func fnChangeColumn(mUp *m.UpDown, mDown *m.UpDown) {
+func fnChangeColumn(mUp *UpDown, mDown *UpDown) {
 }
 
-func fnCreateTable(mm *m.UpDown, tableName string, fieldArray []string) {
-	ct := m.CreateTable{TableName: tableName}
+func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
+	ct := CreateTable{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := m.Columns{
+			col := Columns{
 				FieldName: split[0][1],
 				DataType:  split[0][2]}
 			ct.Columns = append(ct.Columns, col)
@@ -317,12 +328,12 @@ func fnCreateTable(mm *m.UpDown, tableName string, fieldArray []string) {
 	mm.CreateTable = append(mm.CreateTable, ct)
 }
 
-func fnDropColumn(mm *m.UpDown, tableName string, fieldArray []string) {
-	dc := m.DropColumn{TableName: tableName}
+func fnDropColumn(mm *UpDown, tableName string, fieldArray []string) {
+	dc := DropColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
-		col := m.Columns{}
+		col := Columns{}
 		if r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
@@ -336,16 +347,16 @@ func fnDropColumn(mm *m.UpDown, tableName string, fieldArray []string) {
 	mm.DropColumn = append(mm.DropColumn, dc)
 }
 
-func fnDropTable(mm *m.UpDown, tableName string) {
-	dt := m.DropTable{TableName: tableName}
+func fnDropTable(mm *UpDown, tableName string) {
+	dt := DropTable{TableName: tableName}
 	mm.DropTable = append(mm.DropTable, dt)
 }
 
-func fnRenameTable(mUp *m.UpDown, mDown *m.UpDown, srcTableName string, destTablename string) {
-	mUp.RenameTable = append(mUp.RenameTable, m.RenameTable{
+func fnRenameTable(mUp *UpDown, mDown *UpDown, srcTableName string, destTablename string) {
+	mUp.RenameTable = append(mUp.RenameTable, RenameTable{
 		OldTableName: srcTableName,
 		NewTableName: destTablename})
-	mDown.RenameTable = append(mDown.RenameTable, m.RenameTable{
+	mDown.RenameTable = append(mDown.RenameTable, RenameTable{
 		OldTableName: destTablename,
 		NewTableName: srcTableName})
 }
@@ -407,8 +418,8 @@ func migrateUpDown(updown string) {
 		docScript := []byte(bs)
 
 		var (
-			mm  m.Migration
-			mig m.UpDown
+			mm  Migration
+			mig UpDown
 		)
 
 		if config.MigrationOutputFormat == "json" {
@@ -428,7 +439,7 @@ func migrateUpDown(updown string) {
 			if updown == "down" && mm.ID > abc.GetLastMigrationNo() {
 				continue
 			}
-			// gdm_my.ProcessNow(mm, mig, updown, force)
+			// gdmMy.ProcessNow(mm, mig, updown, force)
 			abc.ProcessNow(mm, mig, updown, force)
 		} else {
 			abc := setDB()
@@ -512,7 +523,7 @@ func printCurrentVersion() string {
 }
 
 // checkConfigFileExists loads the configuration if it exists whether it is XML or JSON.
-func checkConfigFileExists(c *m.Config) {
+func checkConfigFileExists(c *Config) {
 	if _, err := os.Stat("./pravasan.conf.json"); err == nil {
 		currentConfFileFormat = "json"
 		bs, err := ioutil.ReadFile("pravasan.conf.json")

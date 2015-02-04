@@ -1,4 +1,4 @@
-package sqlite3
+package main
 
 import (
 	"database/sql"
@@ -8,42 +8,33 @@ import (
 	"strconv"
 	"strings"
 
-	m "github.com/pravasan/pravasan/migration"
-
 	// #TODO need to write comment why use "_"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
-var (
-	bTQ = "" // bTQ = backTickQuote
-
-	// Db - Creating global of type *sql.DB
-	Db                 *sql.DB
-	localConfig        m.Config
-	localUpDown        string
-	migrationTableName string
-	workingVersion     string
-	err                error
-)
-
-//Struct #TODO need to write some comment & need to write different name instead of Struct
-type Struct struct {
+//PostgresStruct #TODO need to write some comment & need to write different name instead of PostgresStruct
+type PostgresStruct struct {
+	bTQ string
 }
 
 // Init is called to initiate the connection to check and do some activities
-func (s Struct) Init(c m.Config) {
+func (s PostgresStruct) Init(c Config) {
 	// This can be useful to check for version and any other dependencies etc.,
-	// fmt.Println("sqlite init() it runs before other functions")
-	Db, _ = sql.Open("sqlite3", c.DbName)
+	// fmt.Println("postgres init() it runs before other functions")
+	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
+	if err != nil {
+		log.Fatal(err)
+	}
 	migrationTableName = c.MigrationTableName
 
 	localConfig = c
+	s.bTQ = "\"" // s.bTQ = backTickQuote
 }
 
 // GetLastMigrationNo to get what is the last migration it has executed.
-func (s Struct) GetLastMigrationNo() string {
+func (s PostgresStruct) GetLastMigrationNo() string {
 	maxVersion := ""
-	query := "SELECT max(" + bTQ + "version" + bTQ + ") FROM " + bTQ + migrationTableName + bTQ
+	query := "SELECT max(" + s.bTQ + "version" + s.bTQ + ") FROM " + s.bTQ + migrationTableName + s.bTQ
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -57,9 +48,8 @@ func (s Struct) GetLastMigrationNo() string {
 }
 
 // CreateMigrationTable used to create the schema_migration if it doesn't exists.
-func (s Struct) CreateMigrationTable() {
-	query := "CREATE TABLE " + bTQ + migrationTableName + bTQ + " (" + bTQ + "version" + bTQ + " VARCHAR(15));"
-	fmt.Println(query)
+func (s PostgresStruct) CreateMigrationTable() {
+	query := "CREATE TABLE " + s.bTQ + migrationTableName + s.bTQ + " (" + s.bTQ + "version" + s.bTQ + " VARCHAR(15))"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -70,12 +60,12 @@ func (s Struct) CreateMigrationTable() {
 }
 
 // ProcessNow is used to run the actual migraition whether it is UP or DOWN.
-func (s Struct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bool) {
+func (s PostgresStruct) ProcessNow(lm Migration, mig UpDown, updown string, force bool) {
 	if updown == "up" {
 		if force == false && lm.ID <= s.GetLastMigrationNo() {
 			return
 		}
-		if force == true && checkMigrationExecutedForID(lm.ID) {
+		if force == true && s.checkMigrationExecutedForID(lm.ID) {
 			fmt.Println(lm.ID + " -> Its already executed.")
 			return
 		}
@@ -88,54 +78,54 @@ func (s Struct) ProcessNow(lm m.Migration, mig m.UpDown, updown string, force bo
 		fmt.Println("Executing ID : ", lm.ID)
 		for _, v := range mig.AddColumn {
 			for _, vv := range v.Columns {
-				addColumn(bTQ+v.TableName+bTQ, bTQ+vv.FieldName+bTQ+" ", dataTypeConversion(vv.DataType))
+				s.addColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ", s.dataTypeConversion(vv.DataType))
 			}
 		}
 		for _, v := range mig.AddIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, bTQ+vv.FieldName+bTQ+" ")
+				fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
 			}
-			addIndex(bTQ+v.TableName+bTQ, v.IndexType, fieldNameArray)
+			s.addIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
 		}
 		for _, v := range mig.CreateTable {
 			var valuesArray []string
 			for _, vv := range v.Columns {
-				valuesArray = append(valuesArray, bTQ+vv.FieldName+bTQ+" "+dataTypeConversion(vv.DataType))
+				valuesArray = append(valuesArray, s.bTQ+vv.FieldName+s.bTQ+" "+s.dataTypeConversion(vv.DataType))
 			}
-			createTable(bTQ+v.TableName+bTQ, valuesArray)
+			s.createTable(s.bTQ+v.TableName+s.bTQ, valuesArray)
 		}
 		for _, v := range mig.DropColumn {
 			for _, vv := range v.Columns {
-				dropColumn(bTQ+v.TableName+bTQ, bTQ+vv.FieldName+bTQ+" ")
+				s.dropColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ")
 			}
 		}
 		for _, v := range mig.DropIndex {
 			var fieldNameArray []string
 			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, bTQ+vv.FieldName+bTQ+" ")
+				fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
 			}
-			dropIndex(bTQ+v.TableName+bTQ, v.IndexType, fieldNameArray)
+			s.dropIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
 		}
 		for _, v := range mig.DropTable {
-			dropTable(bTQ + v.TableName + bTQ)
+			s.dropTable(s.bTQ + v.TableName + s.bTQ)
 		}
 		for _, v := range mig.RenameTable {
-			renameTable(bTQ+v.OldTableName+bTQ, bTQ+v.NewTableName+bTQ)
+			s.renameTable(s.bTQ+v.OldTableName+s.bTQ, s.bTQ+v.NewTableName+s.bTQ)
 		}
 		if mig.Sql != "" {
-			directSQL(mig.Sql)
+			s.directSQL(mig.Sql)
 		}
-		updateMigrationTable()
+		s.updateMigrationTable()
 	}
 }
 
-func updateMigrationTable() {
+func (s PostgresStruct) updateMigrationTable() {
 	var query string
 	if localUpDown == "up" {
-		query = "INSERT INTO " + bTQ + migrationTableName + bTQ + "(" + bTQ + "version" + bTQ + ") VALUES ('" + workingVersion + "')"
+		query = "INSERT INTO " + s.bTQ + migrationTableName + s.bTQ + "(" + s.bTQ + "version" + s.bTQ + ") VALUES ('" + workingVersion + "')"
 	} else {
-		query = "DELETE FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + workingVersion + "'"
+		query = "DELETE FROM " + s.bTQ + migrationTableName + s.bTQ + " WHERE " + s.bTQ + "version" + s.bTQ + "='" + workingVersion + "'"
 	}
 	q, err := Db.Query(query)
 	defer q.Close()
@@ -145,9 +135,9 @@ func updateMigrationTable() {
 	}
 }
 
-func checkMigrationExecutedForID(id string) bool {
+func (s PostgresStruct) checkMigrationExecutedForID(id string) bool {
 	var version = ""
-	query := "SELECT " + bTQ + "version" + bTQ + " FROM " + bTQ + migrationTableName + bTQ + " WHERE " + bTQ + "version" + bTQ + "='" + id + "'"
+	query := "SELECT " + s.bTQ + "version" + s.bTQ + " FROM " + s.bTQ + migrationTableName + s.bTQ + " WHERE " + s.bTQ + "version" + s.bTQ + "='" + id + "'"
 	q, err := Db.Query(query)
 	defer q.Close()
 	if err != nil {
@@ -163,7 +153,7 @@ func checkMigrationExecutedForID(id string) bool {
 	return true
 }
 
-func dataTypeConversion(dt string) string {
+func (s PostgresStruct) dataTypeConversion(dt string) string {
 	switch dt {
 	case "string":
 		return "VARCHAR(255)"
@@ -173,13 +163,13 @@ func dataTypeConversion(dt string) string {
 	return dt
 }
 
-func directSQL(query string) {
-	execQuery(query)
+func (s PostgresStruct) directSQL(query string) {
+	s.execQuery(query)
 	return
 }
 
-func execQuery(query string) {
-	fmt.Println("SQLite---" + query)
+func (s PostgresStruct) execQuery(query string) {
+	fmt.Println("Postgres---" + query)
 	q, err := Db.Query(query)
 	if err != nil {
 		log.Fatal(err)
@@ -187,59 +177,59 @@ func execQuery(query string) {
 	defer q.Close()
 }
 
-func createTable(tableName string, fieldDataType []string) {
+func (s PostgresStruct) createTable(tableName string, fieldDataType []string) {
 	query := "CREATE TABLE " + tableName + " (" + strings.Join(fieldDataType, ",") + ")"
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func dropTable(tableName string) {
+func (s PostgresStruct) dropTable(tableName string) {
 	query := "DROP TABLE " + tableName
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func addColumn(tableName string, columnName string, dataType string) {
+func (s PostgresStruct) addColumn(tableName string, columnName string, dataType string) {
 	query := "ALTER TABLE " + tableName + " ADD " + columnName + " " + dataType
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func dropColumn(tableName string, columnName string) {
+func (s PostgresStruct) dropColumn(tableName string, columnName string) {
 	query := "ALTER TABLE " + tableName + " DROP " + columnName
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func addIndex(tableName string, indexType string, field []string) {
+func (s PostgresStruct) addIndex(tableName string, indexType string, field []string) {
 	// #TODO currently indexType is always empty as we don't have a proper way.
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
-	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1), "_")
+	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
 	query := "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func dropIndex(tableName string, indexType string, field []string) {
+func (s PostgresStruct) dropIndex(tableName string, indexType string, field []string) {
 	// #TODO currently indexType is always empty as we don't have a proper way.
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
-	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), bTQ+"", "", -1), " ", "", -1), "_")
+	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
 	query := ""
 	if indexType != "" {
 		query = "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)
 	} else {
 		query = "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 	}
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
 
-func renameTable(oldTableName string, newTableName string) {
+func (s PostgresStruct) renameTable(oldTableName string, newTableName string) {
 	query := "ALTER TABLE " + oldTableName + " RENAME " + newTableName
-	execQuery(query)
+	s.execQuery(query)
 	return
 }
