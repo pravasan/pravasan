@@ -2,6 +2,7 @@ package main
 
 // Config used for general configuration settings for Migration application
 type Config struct {
+	AutoAddColumns         string `xml:"AutoAddColumns,omitempty" json:"AutoAddColumns,omitempty"`
 	DbHostname             string `xml:"DbHostname,omitempty" json:"DbHostname,omitempty"`
 	DbName                 string `xml:"DbName,omitempty" json:"DbName,omitempty"`
 	DbPassword             string `xml:"DbPassword,omitempty" json:"DbPassword,omitempty"`

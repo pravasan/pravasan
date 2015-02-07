@@ -47,6 +47,7 @@ var (
 	flagPassword    = flag.Bool("p", false, "database password")
 	version         = flag.Bool("version", false, "print Pravasan version")
 	storeDirectSQL  = flag.Bool("storeDirectSQL", false, "Store SQL in migration file instead of XML / JSON")
+	autoAddColumns  = flag.String("autoAddColumns", "", "Add default columns when table is created")
 	configOutput    = flag.String("confOutput", currentConfFileFormat, "config file format: json, xml")
 	dbHostname      = flag.String("h", "localhost", "database hostname, default: localhost")
 	dbName          = flag.String("d", "", "database name")
@@ -140,6 +141,8 @@ func initializeDefaults() {
 		config.StoreDirectSQL = "true"
 	}
 
+	config.AutoAddColumns = updateConfigValue(config.AutoAddColumns, *autoAddColumns, "")
+	fmt.Println("----- ", config.AutoAddColumns)
 	config.DbHostname = updateConfigValue(config.DbHostname, *dbHostname, "localhost")
 	config.DbName = updateConfigValue(config.DbName, *dbName, "")
 	config.DbPort = updateConfigValue(config.DbPort, *dbPort, "3306")
@@ -314,6 +317,7 @@ func fnChangeColumn(mUp *UpDown, mDown *UpDown) {
 
 func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 	ct := CreateTable{TableName: tableName}
+	providedCol := []Columns{}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		r, _ := regexp.Compile(FieldDataTypeRegexp)
@@ -322,9 +326,36 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 			col := Columns{
 				FieldName: split[0][1],
 				DataType:  split[0][2]}
-			ct.Columns = append(ct.Columns, col)
+			providedCol = append(providedCol, col)
 		}
 	}
+
+	fmt.Println("+++++ ", config.AutoAddColumns)
+	// Below snippet will add extra columns automatically.
+	if config.AutoAddColumns != "" {
+		aacArray := strings.Fields(config.AutoAddColumns)
+		for _, value := range aacArray {
+			flag := true
+			var autoFieldName, autoDataType string
+			r, _ := regexp.Compile(FieldDataTypeRegexp)
+			if r.MatchString(value) == true {
+				split := r.FindAllStringSubmatch(value, -1)
+				autoFieldName, autoDataType = split[0][1], split[0][2]
+				for _, pcValue := range providedCol {
+					if pcValue.FieldName == split[0][1] {
+						flag = false
+						break
+					}
+				}
+			} else {
+				flag = false
+			}
+			if flag == true {
+				ct.Columns = append(ct.Columns, Columns{FieldName: autoFieldName, DataType: autoDataType})
+			}
+		}
+	}
+	ct.Columns = append(ct.Columns, providedCol...)
 	mm.CreateTable = append(mm.CreateTable, ct)
 }
 
