@@ -35,7 +35,7 @@ const (
 	doneText            = "\033[97m[\033[32mDONE\033[97m] "
 )
 
-// MigInterface #TODO need to write some comment
+// MigInterface #TODO(kishorevaishnav): need to write some comment
 type MigInterface interface {
 	Init(Config)
 	GetLastMigrationNo() string
@@ -142,7 +142,6 @@ func initializeDefaults() {
 	}
 
 	config.AutoAddColumns = updateConfigValue(config.AutoAddColumns, *autoAddColumns, "")
-	fmt.Println("----- ", config.AutoAddColumns)
 	config.DbHostname = updateConfigValue(config.DbHostname, *dbHostname, "localhost")
 	config.DbName = updateConfigValue(config.DbName, *dbName, "")
 	config.DbPort = updateConfigValue(config.DbPort, *dbPort, "3306")
@@ -272,8 +271,7 @@ func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) {
 	ac := AddColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		r, _ := regexp.Compile(FieldDataTypeRegexp)
-		if r.MatchString(fieldArray[key]) == true {
+		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col := Columns{
 				FieldName: split[0][1],
@@ -283,7 +281,13 @@ func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) {
 			ac = AddColumn{}
 		}
 	}
-	mm.AddColumn = append(mm.AddColumn, ac)
+	if config.StoreDirectSQL == "true" {
+		a := UpDown{}
+		a.AddColumn = append(a.AddColumn, ac)
+		mm.Sql = gdmMy.ReturnQuery(a)
+	} else {
+		mm.AddColumn = append(mm.AddColumn, ac)
+	}
 }
 
 func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []string) {
@@ -291,9 +295,8 @@ func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []strin
 	di := DropIndex{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		col := Columns{}
-		if r.MatchString(fieldArray[key]) == true {
+		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
 			col.DataType = split[0][2]
@@ -308,8 +311,17 @@ func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []strin
 			di = DropIndex{}
 		}
 	}
-	mUp.AddIndex = append(mUp.AddIndex, ai)
-	mDown.DropIndex = append(mDown.DropIndex, di)
+	if config.StoreDirectSQL == "true" {
+		a := UpDown{}
+		a.AddIndex = append(a.AddIndex, ai)
+		mUp.Sql = gdmMy.ReturnQuery(a)
+		b := UpDown{}
+		b.DropIndex = append(b.DropIndex, di)
+		mDown.Sql = gdmMy.ReturnQuery(a)
+	} else {
+		mUp.AddIndex = append(mUp.AddIndex, ai)
+		mDown.DropIndex = append(mDown.DropIndex, di)
+	}
 }
 
 func fnChangeColumn(mUp *UpDown, mDown *UpDown) {
@@ -320,8 +332,7 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 	providedCol := []Columns{}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		r, _ := regexp.Compile(FieldDataTypeRegexp)
-		if r.MatchString(fieldArray[key]) == true {
+		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col := Columns{
 				FieldName: split[0][1],
@@ -337,8 +348,7 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 		for _, value := range aacArray {
 			flag := true
 			var autoFieldName, autoDataType string
-			r, _ := regexp.Compile(FieldDataTypeRegexp)
-			if r.MatchString(value) == true {
+			if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(value) == true {
 				split := r.FindAllStringSubmatch(value, -1)
 				autoFieldName, autoDataType = split[0][1], split[0][2]
 				for _, pcValue := range providedCol {
@@ -356,16 +366,21 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 		}
 	}
 	ct.Columns = append(ct.Columns, providedCol...)
-	mm.CreateTable = append(mm.CreateTable, ct)
+	if config.StoreDirectSQL == "true" {
+		a := UpDown{}
+		a.CreateTable = append(a.CreateTable, ct)
+		mm.Sql = gdmMy.ReturnQuery(a)
+	} else {
+		mm.CreateTable = append(mm.CreateTable, ct)
+	}
 }
 
 func fnDropColumn(mm *UpDown, tableName string, fieldArray []string) {
 	dc := DropColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		r, _ := regexp.Compile(FieldDataTypeRegexp)
 		col := Columns{}
-		if r.MatchString(fieldArray[key]) == true {
+		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
 			col.DataType = split[0][2]
@@ -375,12 +390,24 @@ func fnDropColumn(mm *UpDown, tableName string, fieldArray []string) {
 			dc.Columns = append(dc.Columns, col)
 		}
 	}
-	mm.DropColumn = append(mm.DropColumn, dc)
+	if config.StoreDirectSQL == "true" {
+		a := UpDown{}
+		a.DropColumn = append(a.DropColumn, dc)
+		mm.Sql = gdmMy.ReturnQuery(a)
+	} else {
+		mm.DropColumn = append(mm.DropColumn, dc)
+	}
 }
 
 func fnDropTable(mm *UpDown, tableName string) {
 	dt := DropTable{TableName: tableName}
-	mm.DropTable = append(mm.DropTable, dt)
+	if config.StoreDirectSQL == "true" {
+		a := UpDown{}
+		a.DropTable = append(a.DropTable, dt)
+		mm.Sql = gdmMy.ReturnQuery(a)
+	} else {
+		mm.DropTable = append(mm.DropTable, dt)
+	}
 }
 
 func fnRenameTable(mUp *UpDown, mDown *UpDown, srcTableName string, destTablename string) {

@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	// #TODO need to write comment why use "_"
+	// #TODO(kishorevaishnav): need to write comment why use "_"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//MySQLStruct #TODO need to write some comment & need to write different name instead of MySQLStruct
+//MySQLStruct #TODO(kishorevaishnav): need to write some comment & need to write different name instead of MySQLStruct
 type MySQLStruct struct {
 	bTQ string
 }
@@ -67,54 +67,64 @@ func (s MySQLStruct) ProcessNow(lm Migration, mig UpDown, updown string, force b
 			return
 		}
 	}
-	localUpDown = updown
 
+	localUpDown = updown
 	workingVersion = lm.ID
-	nid, _ := strconv.Atoi(lm.ID)
-	if nid != 0 {
+
+	if nid, _ := strconv.Atoi(lm.ID); nid != 0 {
 		fmt.Println("Executing ID : ", lm.ID)
-		for _, v := range mig.AddColumn {
-			for _, vv := range v.Columns {
-				s.addColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ", s.dataTypeConversion(vv.DataType))
-			}
-		}
-		for _, v := range mig.AddIndex {
-			var fieldNameArray []string
-			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
-			}
-			s.addIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
-		}
-		for _, v := range mig.CreateTable {
-			var valuesArray []string
-			for _, vv := range v.Columns {
-				valuesArray = append(valuesArray, s.bTQ+vv.FieldName+s.bTQ+" "+s.dataTypeConversion(vv.DataType))
-			}
-			s.createTable(s.bTQ+v.TableName+s.bTQ, valuesArray)
-		}
-		for _, v := range mig.DropColumn {
-			for _, vv := range v.Columns {
-				s.dropColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ")
-			}
-		}
-		for _, v := range mig.DropIndex {
-			var fieldNameArray []string
-			for _, vv := range v.Columns {
-				fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
-			}
-			s.dropIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
-		}
-		for _, v := range mig.DropTable {
-			s.dropTable(s.bTQ + v.TableName + s.bTQ)
-		}
-		for _, v := range mig.RenameTable {
-			s.renameTable(s.bTQ+v.OldTableName+s.bTQ, s.bTQ+v.NewTableName+s.bTQ)
-		}
+		s.execQuery(s.ReturnQuery(mig))
 		if mig.Sql != "" {
 			s.directSQL(mig.Sql)
 		}
 		s.updateMigrationTable()
 	}
+}
+
+// ReturnQuery will return direct SQL query
+func (s MySQLStruct) ReturnQuery(mig UpDown) string {
+	for _, v := range mig.AddColumn {
+		for _, vv := range v.Columns {
+			// #TODO(kishorevaishnav): need to remove the return out of the for loop
+			return s.addColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ", s.dataTypeConversion(vv.DataType))
+		}
+	}
+	for _, v := range mig.AddIndex {
+		var fieldNameArray []string
+		for _, vv := range v.Columns {
+			fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
+		}
+		return s.addIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
+	}
+	for _, v := range mig.CreateTable {
+		var valuesArray []string
+		for _, vv := range v.Columns {
+			valuesArray = append(valuesArray, s.bTQ+vv.FieldName+s.bTQ+" "+s.dataTypeConversion(vv.DataType))
+		}
+		return s.createTable(s.bTQ+v.TableName+s.bTQ, valuesArray)
+	}
+	for _, v := range mig.DropColumn {
+		for _, vv := range v.Columns {
+			// #TODO(kishorevaishnav): need to remove the return out of the for loop
+			return s.dropColumn(s.bTQ+v.TableName+s.bTQ, s.bTQ+vv.FieldName+s.bTQ+" ")
+		}
+	}
+	for _, v := range mig.DropIndex {
+		var fieldNameArray []string
+		for _, vv := range v.Columns {
+			fieldNameArray = append(fieldNameArray, s.bTQ+vv.FieldName+s.bTQ+" ")
+		}
+		return s.dropIndex(s.bTQ+v.TableName+s.bTQ, v.IndexType, fieldNameArray)
+	}
+	for _, v := range mig.DropTable {
+		// #TODO(kishorevaishnav): need to remove the return out of the for loop
+		return s.dropTable(s.bTQ + v.TableName + s.bTQ)
+	}
+	for _, v := range mig.RenameTable {
+		// #TODO(kishorevaishnav): need to remove the return out of the for loop
+		return s.renameTable(s.bTQ+v.OldTableName+s.bTQ, s.bTQ+v.NewTableName+s.bTQ)
+	}
+	return ""
 }
 
 func (s MySQLStruct) updateMigrationTable() {
@@ -174,59 +184,43 @@ func (s MySQLStruct) execQuery(query string) {
 	defer q.Close()
 }
 
-func (s MySQLStruct) createTable(tableName string, fieldDataType []string) {
-	query := "CREATE TABLE " + tableName + " (" + strings.Join(fieldDataType, ",") + ")"
-	s.execQuery(query)
-	return
+func (s MySQLStruct) createTable(tableName string, fieldDataType []string) string {
+	return "CREATE TABLE " + tableName + " (" + strings.Join(fieldDataType, ",") + ")"
 }
 
-func (s MySQLStruct) dropTable(tableName string) {
-	query := "DROP TABLE " + tableName
-	s.execQuery(query)
-	return
+func (s MySQLStruct) dropTable(tableName string) string {
+	return "DROP TABLE " + tableName
 }
 
-func (s MySQLStruct) addColumn(tableName string, columnName string, dataType string) {
-	query := "ALTER TABLE " + tableName + " ADD " + columnName + " " + dataType
-	s.execQuery(query)
-	return
+func (s MySQLStruct) addColumn(tableName string, columnName string, dataType string) string {
+	return "ALTER TABLE " + tableName + " ADD " + columnName + " " + dataType
 }
 
-func (s MySQLStruct) dropColumn(tableName string, columnName string) {
-	query := "ALTER TABLE " + tableName + " DROP " + columnName
-	s.execQuery(query)
-	return
+func (s MySQLStruct) dropColumn(tableName string, columnName string) string {
+	return "ALTER TABLE " + tableName + " DROP " + columnName
 }
 
-func (s MySQLStruct) addIndex(tableName string, indexType string, field []string) {
-	// #TODO currently indexType is always empty as we don't have a proper way.
+func (s MySQLStruct) addIndex(tableName string, indexType string, field []string) string {
+	// #TODO(kishorevaishnav): currently indexType is always empty as we don't have a proper way.
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
 	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
-	query := "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
-	s.execQuery(query)
-	return
+	return "CREATE " + strings.ToUpper(indexType) + " INDEX " + tmpIndexName + " ON " + tableName + "( " + strings.Join(field, ",") + " )"
 }
 
-func (s MySQLStruct) dropIndex(tableName string, indexType string, field []string) {
-	// #TODO currently indexType is always empty as we don't have a proper way.
+func (s MySQLStruct) dropIndex(tableName string, indexType string, field []string) string {
+	// #TODO(kishorevaishnav): currently indexType is always empty as we don't have a proper way.
 
 	sort.Strings(field)
 	tmpIndexName := localConfig.IndexPrefix + "_" + strings.Join(field, "_") + "_" + localConfig.IndexSuffix
 	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
-	query := ""
 	if indexType != "" {
-		query = "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)
-	} else {
-		query = "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
+		return "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)
 	}
-	s.execQuery(query)
-	return
+	return "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 }
 
-func (s MySQLStruct) renameTable(oldTableName string, newTableName string) {
-	query := "ALTER TABLE " + oldTableName + " RENAME " + newTableName
-	s.execQuery(query)
-	return
+func (s MySQLStruct) renameTable(oldTableName string, newTableName string) string {
+	return "ALTER TABLE " + oldTableName + " RENAME " + newTableName
 }

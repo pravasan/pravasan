@@ -26,7 +26,7 @@ type Migration struct {
 	Down UpDown `xml:"down,omitempty" json:"down,omitempty"`
 }
 
-// UpDown structre ... #TODO need to write some proper comment
+// UpDown structre ... #TODO(kishorevaishnav): need to write some proper comment
 type UpDown struct {
 	AddColumn   []AddColumn   `xml:"addColumn,omitempty" json:"addColumn,omitempty"`
 	AddIndex    []AddIndex    `xml:"addIndex,omitempty" json:"addIndex,omitempty"`
@@ -38,50 +38,50 @@ type UpDown struct {
 	Sql         string        `xml:"sql,omitempty" json:"sql,omitempty"`
 }
 
-// AddColumn structre ... #TODO need to write some proper comment
+// AddColumn structre ... #TODO(kishorevaishnav): need to write some proper comment
 type AddColumn struct {
 	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
 	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
-// AddIndex structre ... #TODO need to write some proper comment
+// AddIndex structre ... #TODO(kishorevaishnav): need to write some proper comment
 type AddIndex struct {
 	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
 	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
 	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
-// CreateTable structre ... #TODO need to write some proper comment
+// CreateTable structre ... #TODO(kishorevaishnav): need to write some proper comment
 type CreateTable struct {
 	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
 	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
-// DropColumn structre ... #TODO need to write some proper comment
+// DropColumn structre ... #TODO(kishorevaishnav): need to write some proper comment
 type DropColumn struct {
 	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
 	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
-// DropIndex structre ... #TODO need to write some proper comment
+// DropIndex structre ... #TODO(kishorevaishnav): need to write some proper comment
 type DropIndex struct {
 	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
 	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
 	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
-// DropTable structre ... #TODO need to write some proper comment
+// DropTable structre ... #TODO(kishorevaishnav): need to write some proper comment
 type DropTable struct {
 	TableName string `xml:"tableName,omitempty" json:"tableName,omitempty"`
 }
 
-// RenameTable structre ... #TODO need to write some proper comment
+// RenameTable structre ... #TODO(kishorevaishnav): need to write some proper comment
 type RenameTable struct {
 	OldTableName string `xml:"oldTableName,omitempty" json:"oldTableName,omitempty"`
 	NewTableName string `xml:"newTableName,omitempty" json:"newTableName,omitempty"`
 }
 
-// Columns structre ... #TODO need to write some proper comment
+// Columns structre ... #TODO(kishorevaishnav): need to write some proper comment
 type Columns struct {
 	FieldName string `xml:"fieldname,omitempty" json:"fieldname,omitempty"`
 	DataType  string `xml:"datatype,omitempty" json:"datatype,omitempty"`

@@ -17,7 +17,7 @@ func TestPrintCurrentVersion(t *testing.T) {
 }
 
 func Test_CurrentVersion_Using_Flag(t *testing.T) {
-	// // # TODO Don't know how to handle this
+	// // #TODO(kishorevaishnav): Don't know how to handle this
 	// args := os.Args
 	// defer func() { os.Args = args }()
 	// os.Args = []string{"", "-version"}
@@ -46,6 +46,25 @@ func Test_CreateTable_Migration(t *testing.T) {
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"createTable":[{"tableName":"test123","columns":[{"fieldname":"first","datatype":"int"},{"fieldname":"second","datatype":"string"}]}]},"down":{"dropTable":[{"tableName":"test123"}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
+}
+
+func Test_CreateTable_Migration_AutoAddColumns(t *testing.T) {
+	f1 := flag.NewFlagSet("f1", flag.ContinueOnError)
+	var autoAddColumns string
+	f1.StringVar(&autoAddColumns, "autoAddColumns", "id:int created_at:datetime modified_at:datetime", "-------")
+	err := f1.Parse([]string{"autoAddColumns"})
+	if err != nil {
+		fmt.Println(autoAddColumns)
+		fmt.Println(err)
+	}
+	fmt.Println("inside Test_CreateTabel")
+	// initializeDefaults()
+	argsss := []string{"add", "ct", "test123", "first:int", "second:string"}
+	fileName, mm := generateMigration(argsss)
+	expectedString := `{"id":"` + getID(fileName) + `","up":{"createTable":[{"tableName":"test123","columns":[{"fieldname":"first","datatype":"int"},{"fieldname":"second","datatype":"string"}]}]},"down":{"dropTable":[{"tableName":"test123"}]}}`
+	content1, _ := json.Marshal(mm)
+	checkError(t, expectedString, string(content1))
+	fmt.Println("outside Test_CreateTabel")
 }
 
 func Test_DropTable_Migration(t *testing.T) {
@@ -93,7 +112,7 @@ func Test_WithoutConfig_MigrationDirectoryExists(t *testing.T) {
 }
 
 func Test_WithConfig_MigrationDirectoryExists(t *testing.T) {
-	// #TODO pending to test this function.
+	// #TODO(kishorevaishnav): pending to test this function.
 	args := os.Args
 	defer func() { os.Args = args }()
 	// os.Args = []string{"./pravasan", "add", "ct", "test123", "first:int"}
