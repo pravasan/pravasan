@@ -21,6 +21,9 @@ type MySQLStruct struct {
 func (s MySQLStruct) Init(c Config) {
 	// This can be useful to check for version and any other dependencies etc.,
 	// fmt.Println("mysql init() it runs before other functions")
+	if c.DbPort == "" {
+		c.DbPort = "3306"
+	}
 	Db, _ = sql.Open("mysql", c.DbUsername+":"+c.DbPassword+"@/"+c.DbName)
 	migrationTableName = c.MigrationTableName
 

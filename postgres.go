@@ -21,7 +21,10 @@ type PostgresStruct struct {
 func (s PostgresStruct) Init(c Config) {
 	// This can be useful to check for version and any other dependencies etc.,
 	// fmt.Println("postgres init() it runs before other functions")
-	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
+	if c.DbPort == "" {
+		c.DbPort = "5432"
+	}
+ 	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
