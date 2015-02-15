@@ -6,8 +6,5 @@ notificaitons:
     on_failure: always
 before_script:
 - go get github.com/howeyc/gopass
-- go get github.com/pravasan/pravasan/migration
-- go get github.com/pravasan/pravasan/mysql
-- go get github.com/pravasan/pravasan/postgres
 - go get github.com/go-sql-driver/mysql
 - go get github.com/lib/pq
