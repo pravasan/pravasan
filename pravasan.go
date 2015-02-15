@@ -66,19 +66,21 @@ var (
 	config                Config
 	currentConfFileFormat = "json"
 	m                     Migration
-	Db                    *sql.DB
-	localConfig           Config
-	localUpDown           string
-	migrationTableName    string
-	workingVersion        string
-	err                   error
+
+	// Db #TODO(kishorevaishnav): need to write proper comment
+	Db                 *sql.DB
+	localConfig        Config
+	localUpDown        string
+	migrationTableName string
+	workingVersion     string
+	err                error
 
 	lAction    string
 	lSubAction string
 
 	gdmMy MySQLStruct
 	gdmPq PostgresStruct
-	gdmSl SQLite3Struct
+	// gdmSl SQLite3Struct
 )
 
 func main() {
@@ -190,9 +192,9 @@ func setDB() (mi MigInterface) {
 	case "postgres":
 		// midb := gdmPq
 		mi = MigInterface(gdmPq)
-	case "sqlite3":
-		// midb := gdmSl{}
-		mi = MigInterface(gdmSl)
+	// case "sqlite3":
+	// 	// midb := gdmSl{}
+	// 	mi = MigInterface(gdmSl)
 	default:
 		// midb := gdmMy{}
 		mi = MigInterface(gdmMy)
@@ -346,9 +348,8 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Columns, error)
 			info = true
 			if validate["fieldname"] {
 				return nil, errors.New("Either fieldname or datatype provided is wrong : \"" + fieldArray[key] + "\".")
-			} else {
-				refinedColumns[key] = Columns{FieldName: fieldArray[key]}
 			}
+			refinedColumns[key] = Columns{FieldName: fieldArray[key]}
 		}
 	}
 	if info {
