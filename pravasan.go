@@ -26,7 +26,7 @@ const (
 	layout         = "20060102150405"
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
-	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})`
+	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})(\(\d+\)){0,1}$`
 	infoText            = "\033[97m[\033[0;36mINFO\033[97m] "
 	resetText           = "\033[0m"
 	runningText         = "\033[97m[\033[33mRUNNING\033[97m] "
@@ -73,6 +73,9 @@ var (
 	workingVersion        string
 	err                   error
 
+	lAction    string
+	lSubAction string
+
 	gdmMy MySQLStruct
 	gdmPq PostgresStruct
 	gdmSl SQLite3Struct
@@ -87,12 +90,17 @@ func main() {
 	}
 	_, err := migrationDirectoryExists()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	switch argArray[0] {
+	lAction = argArray[0]
+	switch lAction {
 	case "add", "a":
-		fn, mm := generateMigration(argArray)
+		fn, mm, err := generateMigration(argArray)
+		if err != nil {
+			log.Println(errorText + err.Error() + resetText)
+			return
+		}
 		fmt.Println(fn)
 		writeToFile(fn, mm, config.MigrationOutputFormat)
 	case "create", "c":
@@ -198,27 +206,40 @@ func createMigration() {
 	abc.CreateMigrationTable()
 }
 
-func generateMigration(argsArray []string) (filename string, mm Migration) {
+func generateMigration(argsArray []string) (filename string, mm Migration, err error) {
 	t := time.Now()
 	// mm = m.Migration{}
 	mm.ID = t.Format(layout)
-	switch argsArray[1] {
+	lSubAction = argsArray[1]
+	switch lSubAction {
 	case "add_column", "ac":
-		fnAddColumn(&mm.Up, argsArray[2], argsArray[3:])
+		err = fnAddColumn(&mm.Up, argsArray[2], argsArray[3:])
+		if err != nil {
+			return
+		}
 		fnDropColumn(&mm.Down, argsArray[2], argsArray[3:])
 	case "add_index", "ai":
 		fnAddIndex(&mm.Up, &mm.Down, argsArray[2], argsArray[3:])
 	case "create_table", "ct":
-		fnCreateTable(&mm.Up, argsArray[2], argsArray[3:])
+		err = fnCreateTable(&mm.Up, argsArray[2], argsArray[3:])
+		if err != nil {
+			return
+		}
 		fnDropTable(&mm.Down, argsArray[2])
 	case "drop_column", "dc":
 		fnDropColumn(&mm.Up, argsArray[2], argsArray[3:])
-		fnAddColumn(&mm.Down, argsArray[2], argsArray[3:])
+		err = fnAddColumn(&mm.Down, argsArray[2], argsArray[3:])
+		if err != nil {
+			return
+		}
 	case "drop_index", "di":
 		fnAddIndex(&mm.Down, &mm.Up, argsArray[2], argsArray[3:])
 	case "drop_table", "dt":
 		fnDropTable(&mm.Up, argsArray[2])
-		fnCreateTable(&mm.Down, argsArray[2], argsArray[3:])
+		err = fnCreateTable(&mm.Down, argsArray[2], argsArray[3:])
+		if err != nil {
+			return
+		}
 	case "rename_table", "rt":
 		fnRenameTable(&mm.Up, &mm.Down, argsArray[2], argsArray[3])
 	case "sql", "s":
@@ -267,19 +288,81 @@ func fnSql(mig *Migration) {
 	mig.Down.Sql = strings.TrimSpace(localSql)
 }
 
-func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) {
-	ac := AddColumn{TableName: tableName}
+func fieldAndDataType(fieldArray []string, valArray []string) ([]Columns, error) {
+
+	// #TODO(kishorevaishnav): Listed MySQL datatypes need to check and
+	// add for other Databases like PostgreSQL, SQLite3, Oracle, etc.,
+	datatypes := map[string]bool{
+		"bit":        true,
+		"tinyint":    true,
+		"bool":       true,
+		"boolean":    true,
+		"smallint":   true,
+		"mediumint":  true,
+		"int":        true,
+		"integer":    true,
+		"bigint":     true,
+		"serial":     true,
+		"decimal":    true,
+		"dec":        true,
+		"numeric":    true,
+		"fixed":      true,
+		"float":      true,
+		"double":     true,
+		"real":       true,
+		"date":       true,
+		"datetime":   true,
+		"timestamp":  true,
+		"time":       true,
+		"year":       true,
+		"varchar":    true,
+		"binary":     true,
+		"varbinary":  true,
+		"tinyblob":   true,
+		"tinytext":   true,
+		"text":       true,
+		"mediumblob": true,
+		"longblob":   true,
+		"longtext":   true,
+		"string":     true,
+	}
+	info := false
+	validate := map[string]bool{}
+	for _, v := range valArray {
+		validate[v] = true
+	}
+	refinedColumns := make([]Columns, len(fieldArray))
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := Columns{
-				FieldName: split[0][1],
-				DataType:  split[0][2]}
-			ac.Columns = append(ac.Columns, col)
+			lfn, ldt, size := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][3], " ")
+			if datatypes[ldt] {
+				refinedColumns[key] = Columns{FieldName: lfn, DataType: ldt + size}
+			} else {
+				return nil, errors.New("May be wrong datatype provided : \"" + fieldArray[key] + "\".")
+			}
 		} else {
-			ac = AddColumn{}
+			info = true
+			if validate["fieldname"] {
+				return nil, errors.New("Either fieldname or datatype provided is wrong : \"" + fieldArray[key] + "\".")
+			} else {
+				refinedColumns[key] = Columns{FieldName: fieldArray[key]}
+			}
 		}
+	}
+	if info {
+		log.Println(infoText + "Down Migration might not work due to less data" + resetText)
+	}
+	return refinedColumns, nil
+}
+func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) (err error) {
+
+	ac := AddColumn{TableName: tableName}
+	if lSubAction == "add_column" || lSubAction == "ac" {
+		ac.Columns, err = fieldAndDataType(fieldArray, []string{"fieldname", "datatype"})
+	} else {
+		ac.Columns, err = fieldAndDataType(fieldArray, []string{"datatype"})
 	}
 	if config.StoreDirectSQL == "true" {
 		a := UpDown{}
@@ -288,6 +371,7 @@ func fnAddColumn(mm *UpDown, tableName string, fieldArray []string) {
 	} else {
 		mm.AddColumn = append(mm.AddColumn, ac)
 	}
+	return
 }
 
 func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []string) {
@@ -327,21 +411,13 @@ func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []strin
 func fnChangeColumn(mUp *UpDown, mDown *UpDown) {
 }
 
-func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
+func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) (err error) {
 	ct := CreateTable{TableName: tableName}
-	providedCol := []Columns{}
-	for key, value := range fieldArray {
-		fieldArray[key] = strings.Trim(value, ", ")
-		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
-			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			col := Columns{
-				FieldName: split[0][1],
-				DataType:  split[0][2]}
-			providedCol = append(providedCol, col)
-		}
+	providedCol, err := fieldAndDataType(fieldArray, []string{"fieldname", "datatype"})
+	if err != nil {
+		return err
 	}
 
-	fmt.Println("+++++ ", config.AutoAddColumns)
 	// Below snippet will add extra columns automatically.
 	if config.AutoAddColumns != "" {
 		aacArray := strings.Fields(config.AutoAddColumns)
@@ -373,6 +449,7 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) {
 	} else {
 		mm.CreateTable = append(mm.CreateTable, ct)
 	}
+	return nil
 }
 
 func fnDropColumn(mm *UpDown, tableName string, fieldArray []string) {

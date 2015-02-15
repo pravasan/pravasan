@@ -26,7 +26,7 @@ func Test_CurrentVersion_Using_Flag(t *testing.T) {
 
 func Test_AddColumn_Migration(t *testing.T) {
 	argsss := []string{"add", "ac", "test123", "new_column:int"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"addColumn":[{"tableName":"test123","columns":[{"fieldname":"new_column","datatype":"int"}]}]},"down":{"dropColumn":[{"tableName":"test123","columns":[{"fieldname":"new_column","datatype":"int"}]}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
@@ -34,21 +34,30 @@ func Test_AddColumn_Migration(t *testing.T) {
 
 func Test_DropColumn_Migration(t *testing.T) {
 	argsss := []string{"add", "dc", "test123", "new_column"}
-	fileName, mm := generateMigration(argsss)
-	expectedString := `{"id":"` + getID(fileName) + `","up":{"dropColumn":[{"tableName":"test123","columns":[{"fieldname":"new_column"}]}]},"down":{"addColumn":[{}]}}`
+	fileName, mm, _ := generateMigration(argsss)
+	expectedString := `{"id":"` + getID(fileName) + `","up":{"dropColumn":[{"tableName":"test123","columns":[{"fieldname":"new_column"}]}]},"down":{"addColumn":[{"tableName":"test123","columns":[{"fieldname":"new_column"}]}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
 }
 
 func Test_CreateTable_Migration(t *testing.T) {
 	argsss := []string{"add", "ct", "test123", "first:int", "second:string"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"createTable":[{"tableName":"test123","columns":[{"fieldname":"first","datatype":"int"},{"fieldname":"second","datatype":"string"}]}]},"down":{"dropTable":[{"tableName":"test123"}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
 }
 
+func Test_CreateTableWithSize_Migration(t *testing.T) {
+	argsss := []string{"add", "ct", "test123", "first:int", "second:varchar(255)"}
+	fileName, mm, _ := generateMigration(argsss)
+	expectedString := `{"id":"` + getID(fileName) + `","up":{"createTable":[{"tableName":"test123","columns":[{"fieldname":"first","datatype":"int"},{"fieldname":"second","datatype":"varchar(255)"}]}]},"down":{"dropTable":[{"tableName":"test123"}]}}`
+	content1, _ := json.Marshal(mm)
+	checkError(t, expectedString, string(content1))
+}
+
 func Test_CreateTable_Migration_AutoAddColumns(t *testing.T) {
+	// #TODO(kishorevaishnav): There is some problem with the below code.
 	f1 := flag.NewFlagSet("f1", flag.ContinueOnError)
 	var autoAddColumns string
 	f1.StringVar(&autoAddColumns, "autoAddColumns", "id:int created_at:datetime modified_at:datetime", "-------")
@@ -57,19 +66,17 @@ func Test_CreateTable_Migration_AutoAddColumns(t *testing.T) {
 		fmt.Println(autoAddColumns)
 		fmt.Println(err)
 	}
-	fmt.Println("inside Test_CreateTabel")
 	// initializeDefaults()
 	argsss := []string{"add", "ct", "test123", "first:int", "second:string"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"createTable":[{"tableName":"test123","columns":[{"fieldname":"first","datatype":"int"},{"fieldname":"second","datatype":"string"}]}]},"down":{"dropTable":[{"tableName":"test123"}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
-	fmt.Println("outside Test_CreateTabel")
 }
 
 func Test_DropTable_Migration(t *testing.T) {
 	argsss := []string{"add", "dt", "test123"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"dropTable":[{"tableName":"test123"}]},"down":{"createTable":[{"tableName":"test123"}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
@@ -77,7 +84,7 @@ func Test_DropTable_Migration(t *testing.T) {
 
 func Test_RenameTable_Migration(t *testing.T) {
 	argsss := []string{"add", "rt", "old_test123", "new_test123"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"renameTable":[{"oldTableName":"old_test123","newTableName":"new_test123"}]},"down":{"renameTable":[{"oldTableName":"new_test123","newTableName":"old_test123"}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
@@ -85,7 +92,7 @@ func Test_RenameTable_Migration(t *testing.T) {
 
 func Test_AddIndex_Migration(t *testing.T) {
 	argsss := []string{"add", "ai", "test123", "first_col", "second_col", "third_col"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"addIndex":[{"tableName":"test123","columns":[{"fieldname":"first_col"},{"fieldname":"second_col"},{"fieldname":"third_col"}]}]},"down":{"dropIndex":[{"tableName":"test123","columns":[{"fieldname":"first_col"},{"fieldname":"second_col"},{"fieldname":"third_col"}]}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
@@ -93,7 +100,7 @@ func Test_AddIndex_Migration(t *testing.T) {
 
 func Test_DropIndex_Migration(t *testing.T) {
 	argsss := []string{"add", "di", "test123", "first_col", "second_col", "third_col"}
-	fileName, mm := generateMigration(argsss)
+	fileName, mm, _ := generateMigration(argsss)
 	expectedString := `{"id":"` + getID(fileName) + `","up":{"dropIndex":[{"tableName":"test123","columns":[{"fieldname":"first_col"},{"fieldname":"second_col"},{"fieldname":"third_col"}]}]},"down":{"addIndex":[{"tableName":"test123","columns":[{"fieldname":"first_col"},{"fieldname":"second_col"},{"fieldname":"third_col"}]}]}}`
 	content1, _ := json.Marshal(mm)
 	checkError(t, expectedString, string(content1))
