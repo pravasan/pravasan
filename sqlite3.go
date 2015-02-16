@@ -202,11 +202,11 @@ func (s SQLite3Struct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s SQLite3Struct) dataTypeConversion(dt string) string {
-	if SQLite3SupportedDataTypes[dt] == "" {
+	if SQLite3SupportedDataTypes[strings.ToUpper(dt)] == "" {
 		fmt.Println("UnSupported DataType")
 		os.Exit(1)
 	}
-	return SQLite3SupportedDataTypes[dt]
+	return SQLite3SupportedDataTypes[strings.ToUpper(dt)]
 }
 
 func (s SQLite3Struct) directSQL(query string) {

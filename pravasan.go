@@ -81,16 +81,11 @@ var (
 
 	gdmMy MySQLStruct
 	gdmPq PostgresStruct
-
 	// gdmSl SQLite3Struct
 
 	//ListSuppDataTypes #TODO(kishorevaishnav): need to write some comment
 	ListSuppDataTypes = map[string]map[string]string{}
 )
-
-// func init() {
-// 	fmt.Printf("%v", ListSuppDataTypes)
-// }
 
 func main() {
 	initializeDefaults()
@@ -133,6 +128,9 @@ func main() {
 			}
 		}
 		return
+	case "redo", "r":
+		migrateUpDown("down")
+		migrateUpDown("up")
 	default:
 		panic(errorText + "No or Wrong Actions provided." + resetText)
 	}
@@ -222,8 +220,8 @@ func setDB() (mi MigInterface) {
 }
 
 func createMigration() {
-	abc := setDB()
-	abc.CreateMigrationTable()
+	dataBase := setDB()
+	dataBase.CreateMigrationTable()
 }
 
 func generateMigration(argsArray []string) (filename string, mm Migration, err error) {
@@ -505,7 +503,7 @@ func migrateUpDown(updown string) {
 		force        = false
 	)
 
-	fmt.Println(infoText + "Collecting migration files..." + resetText)
+	fmt.Println(infoText + "Reading migration files..." + resetText)
 	files = migrationFiles(updown)
 	if 0 == len(files) {
 		fmt.Println("No migration files present.")
@@ -513,7 +511,15 @@ func migrateUpDown(updown string) {
 	}
 
 	if len(argArray) > 1 && argArray[1] != "" {
-		if updown == "down" {
+		if lAction == "redo" {
+			reverseCount = 1
+			files, err = checkMigrationFilesExists(argArray[1:len(argArray)])
+			if err != nil {
+				fmt.Println(errorText + "Version number of the file mentioned is wrong." + resetText)
+				return
+			}
+			force = true
+		} else if updown == "down" {
 			reverseCount, err = strconv.Atoi(strings.Replace(argArray[1], "-", "", -1))
 			if err != nil {
 				log.Println(errorText + "Wrong count to be reversed, only integer values accepted." + resetText)
@@ -534,7 +540,6 @@ func migrateUpDown(updown string) {
 		if updown == "down" && reverseCount == processCount {
 			break
 		}
-
 		// Read the content of the file & store into the mm structure
 		fmt.Print(runningText + filename + resetText + " - ")
 		bs, err := ioutil.ReadFile(filename)
@@ -561,22 +566,13 @@ func migrateUpDown(updown string) {
 			mig = mm.Down
 		}
 
-		if config.DbType == "mysql" {
-			abc := setDB()
-			if updown == "down" && mm.ID > abc.GetLastMigrationNo() {
-				continue
-			}
-			// gdmMy.ProcessNow(mm, mig, updown, force)
-			abc.ProcessNow(mm, mig, updown, force)
-		} else {
-			abc := setDB()
-			if updown == "down" && mm.ID > abc.GetLastMigrationNo() {
-				continue
-			}
-			abc.ProcessNow(mm, mig, updown, force)
+		dataBase := setDB()
+		if lAction != "redo" && updown == "down" && mm.ID > dataBase.GetLastMigrationNo() {
+			continue
 		}
+		dataBase.ProcessNow(mm, mig, updown, force)
 		processCount++
-		fmt.Println(successText + filename + " Migrated." + resetText)
+		fmt.Println(successText + filename + " Migrated " + strings.ToTitle(updown) + "." + resetText)
 	}
 }
 

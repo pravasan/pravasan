@@ -222,11 +222,11 @@ func (s PostgresStruct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s PostgresStruct) dataTypeConversion(dt string) string {
-	if PostgreSQLSupportedDataTypes[dt] == "" {
+	if PostgreSQLSupportedDataTypes[strings.ToUpper(dt)] == "" {
 		fmt.Println("UnSupported DataType")
 		os.Exit(1)
 	}
-	return PostgreSQLSupportedDataTypes[dt]
+	return PostgreSQLSupportedDataTypes[strings.ToUpper(dt)]
 }
 
 func (s PostgresStruct) directSQL(query string) {

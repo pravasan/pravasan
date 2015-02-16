@@ -210,11 +210,11 @@ func (s MySQLStruct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s MySQLStruct) dataTypeConversion(dt string) string {
-	if MySQLSupportedDataTypes[dt] == "" {
+	if MySQLSupportedDataTypes[strings.ToUpper(dt)] == "" {
 		fmt.Println("UnSupported DataType")
 		os.Exit(1)
 	}
-	return MySQLSupportedDataTypes[dt]
+	return MySQLSupportedDataTypes[strings.ToUpper(dt)]
 }
 
 func (s MySQLStruct) directSQL(query string) {
