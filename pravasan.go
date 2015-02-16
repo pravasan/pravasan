@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	currentVersion = "0.3"
+	currentVersion = "0.4"
 	layout         = "20060102150405"
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
@@ -41,6 +41,7 @@ type MigInterface interface {
 	GetLastMigrationNo() string
 	CreateMigrationTable()
 	ProcessNow(Migration, UpDown, string, bool)
+	// ListOfSupportedDataTypes() map[string]string
 }
 
 var (
@@ -80,8 +81,16 @@ var (
 
 	gdmMy MySQLStruct
 	gdmPq PostgresStruct
+
 	// gdmSl SQLite3Struct
+
+	//ListSuppDataTypes #TODO(kishorevaishnav): need to write some comment
+	ListSuppDataTypes = map[string]map[string]string{}
 )
+
+// func init() {
+// 	fmt.Printf("%v", ListSuppDataTypes)
+// }
 
 func main() {
 	initializeDefaults()
@@ -115,6 +124,15 @@ func main() {
 		migrateUpDown("down")
 	case "up", "u":
 		migrateUpDown("up")
+	case "list", "l":
+		if argArray[1] == "datatypes" || argArray[1] == "dt" {
+			if len(argArray) > 2 {
+				TableOfDataTypes(argArray[2])
+			} else {
+				TableOfDataTypes("")
+			}
+		}
+		return
 	default:
 		panic(errorText + "No or Wrong Actions provided." + resetText)
 	}
@@ -294,40 +312,13 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Column, error) 
 
 	// #TODO(kishorevaishnav): Listed MySQL datatypes need to check and
 	// add for other Databases like PostgreSQL, SQLite3, Oracle, etc.,
-	datatypes := map[string]bool{
-		"bit":        true,
-		"tinyint":    true,
-		"bool":       true,
-		"boolean":    true,
-		"smallint":   true,
-		"mediumint":  true,
-		"int":        true,
-		"integer":    true,
-		"bigint":     true,
-		"serial":     true,
-		"decimal":    true,
-		"dec":        true,
-		"numeric":    true,
-		"fixed":      true,
-		"float":      true,
-		"double":     true,
-		"real":       true,
-		"date":       true,
-		"datetime":   true,
-		"timestamp":  true,
-		"time":       true,
-		"year":       true,
-		"varchar":    true,
-		"binary":     true,
-		"varbinary":  true,
-		"tinyblob":   true,
-		"tinytext":   true,
-		"text":       true,
-		"mediumblob": true,
-		"longblob":   true,
-		"longtext":   true,
-		"string":     true,
+	datatypes := map[string]bool{}
+	for _, list := range ListSuppDataTypes {
+		for k := range list {
+			datatypes[k] = true
+		}
 	}
+
 	info := false
 	validate := map[string]bool{}
 	for _, v := range valArray {
@@ -338,9 +329,9 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Column, error) 
 		fieldArray[key] = strings.Trim(value, ", ")
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			lfn, ldt, size := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][3], " ")
-			if datatypes[ldt] {
-				refinedColumns[key] = Column{FieldName: lfn, DataType: ldt + size}
+			lfn, ldt, lsize := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][3], " ")
+			if datatypes[strings.ToUpper(ldt)] {
+				refinedColumns[key] = Column{FieldName: lfn, DataType: ldt + lsize}
 			} else {
 				return nil, errors.New("May be wrong datatype provided : \"" + fieldArray[key] + "\".")
 			}

@@ -11,7 +11,7 @@ import (
 
 func TestPrintCurrentVersion(t *testing.T) {
 	pcv := printCurrentVersion()
-	if pcv != infoText+"pravasan version 0.3"+resetText {
+	if pcv != infoText+"pravasan version 0.4"+resetText {
 		t.Error("Failed to identify the correct version")
 	}
 }

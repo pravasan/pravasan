@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,6 +17,51 @@ import (
 type MySQLStruct struct {
 	bTQ string
 }
+
+// MySQLSupportedDataTypes #TODO(kishorevaishnav): need to write some comment
+var MySQLSupportedDataTypes = map[string]string{
+	"BIT":        "BIT",
+	"TINYINT":    "TINYINT",
+	"SMALLINT":   "SMALLINT",
+	"MEDIUMINT":  "MEDIUMINT",
+	"BIGINT":     "BIGINT",
+	"SERIAL":     "SERIAL",
+	"FLOAT":      "FLOAT",
+	"DOUBLE":     "DOUBLE",
+	"REAL":       "REAL",
+	"DATE":       "DATE",
+	"DATETIME":   "DATETIME",
+	"TIMESTAMP":  "TIMESTAMP",
+	"TIME":       "TIME",
+	"YEAR":       "YEAR",
+	"VARCHAR":    "VARCHAR",
+	"BINARY":     "BINARY",
+	"VARBINARY":  "VARBINARY",
+	"TINYBLOB":   "TINYBLOB",
+	"TINYTEXT":   "TINYTEXT",
+	"TEXT":       "TEXT",
+	"MEDIUMBLOB": "MEDIUMBLOB",
+	"LONGBLOB":   "LONGBLOB",
+	"LONGTEXT":   "LONGTEXT",
+	"DECIMAL":    "DECIMAL",
+	"BOOLEAN":    "BOOLEAN",
+	"INTEGER":    "INTEGER",
+	"INT":        "INTEGER",      // Alias of INTEGER
+	"DEC":        "DECIMAL",      // Alias of DECIMAL
+	"NUMERIC":    "DECIMAL",      // Alias of DECIMAL
+	"FIXED":      "DECIMAL",      // Alias of DECIMAL
+	"BOOL":       "BOOLEAN",      // Alias of BOOLEAN
+	"STRING":     "VARCHAR(255)", // Alias of VARCHAR
+}
+
+func init() {
+	ListSuppDataTypes["MySQL"] = MySQLSupportedDataTypes
+}
+
+// // ListOfSupportedDataTypes return the supported List of DataTypes.
+// func (s MySQLStruct) ListOfSupportedDataTypes() (sdt map[string]string) {
+// 	return MySQLSupportedDataTypes
+// }
 
 // Init is called to initiate the connection to check and do some activities
 func (s MySQLStruct) Init(c Config) {
@@ -164,13 +210,11 @@ func (s MySQLStruct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s MySQLStruct) dataTypeConversion(dt string) string {
-	switch dt {
-	case "string":
-		return "VARCHAR(255)"
-	case "int":
-		return "INTEGER"
+	if MySQLSupportedDataTypes[dt] == "" {
+		fmt.Println("UnSupported DataType")
+		os.Exit(1)
 	}
-	return dt
+	return MySQLSupportedDataTypes[dt]
 }
 
 func (s MySQLStruct) directSQL(query string) {

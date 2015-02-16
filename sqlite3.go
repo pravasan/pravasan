@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,6 +17,43 @@ import (
 type SQLite3Struct struct {
 	bTQ string
 }
+
+// SQLite3SupportedDataTypes #TODO(kishorevaishnav): need to write some comment
+var SQLite3SupportedDataTypes = map[string]string{
+	"INT":       "INT",
+	"INTEGER":   "INT",
+	"TINYINT":   "INT",
+	"SMALLINT":  "INT",
+	"MEDIUMINT": "INT",
+	"BIGINT":    "INT",
+	"INT2":      "INT",
+	"INT8":      "INT",
+	"CHARACTER": "TEXT",
+	"VARCHAR":   "TEXT",
+	"NCHAR":     "TEXT",
+	"NVARCHAR":  "TEXT",
+	"TEXT":      "TEXT",
+	"CLOB":      "TEXT",
+	"BLOB":      "BLOB",
+	"REAL":      "REAL",
+	"DOUBLE":    "REAL",
+	"FLOAT":     "REAL",
+	"NUMERIC":   "NUMERIC",
+	"DECIMAL":   "NUMERIC",
+	"BOOLEAN":   "NUMERIC",
+	"DATE":      "NUMERIC",
+	"DATETIME":  "NUMERIC",
+}
+
+func init() {
+	ListSuppDataTypes["SQLite3"] = SQLite3SupportedDataTypes
+	// ListSuppDataTypes["SQLite"] = SQLite3SupportedDataTypes
+}
+
+// // ListOfSupportedDataTypes return the supported List of DataTypes.
+// func (s SQLite3Struct) ListOfSupportedDataTypes() (sdt map[string]string) {
+// 	return SQLite3SupportedDataTypes
+// }
 
 // Init is called to initiate the connection to check and do some activities
 func (s SQLite3Struct) Init(c Config) {
@@ -164,13 +202,11 @@ func (s SQLite3Struct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s SQLite3Struct) dataTypeConversion(dt string) string {
-	switch dt {
-	case "string":
-		return "VARCHAR(255)"
-	case "int":
-		return "INTEGER"
+	if SQLite3SupportedDataTypes[dt] == "" {
+		fmt.Println("UnSupported DataType")
+		os.Exit(1)
 	}
-	return dt
+	return SQLite3SupportedDataTypes[dt]
 }
 
 func (s SQLite3Struct) directSQL(query string) {
@@ -220,9 +256,8 @@ func (s SQLite3Struct) dropIndex(tableName string, indexType string, field []str
 	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
 	if indexType != "" {
 		return "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)
-	} else {
-		return "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 	}
+	return "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 }
 
 func (s SQLite3Struct) renameTable(oldTableName string, newTableName string) string {

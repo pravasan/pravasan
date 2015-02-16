@@ -81,7 +81,7 @@ type RenameTable struct {
 	NewTableName string `xml:"newTableName,omitempty" json:"newTableName,omitempty"`
 }
 
-// Columns structre ... #TODO(kishorevaishnav): need to write some proper comment
+// Column structre ... #TODO(kishorevaishnav): need to write some proper comment
 type Column struct {
 	FieldName string `xml:"fieldname,omitempty" json:"fieldname,omitempty"`
 	DataType  string `xml:"datatype,omitempty" json:"datatype,omitempty"`

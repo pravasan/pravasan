@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +18,62 @@ type PostgresStruct struct {
 	bTQ string
 }
 
+//PostgreSQLSupportedDataTypes #TODO(kishorevaishnav): need to write some comment
+var PostgreSQLSupportedDataTypes = map[string]string{
+	"BIGINT":            "BIGINT",
+	"BIGSERIAL":         "BIGSERIAL",
+	"BIT":               "BIT",
+	"BIT VARYING":       "BIT VARYING",
+	"BOOLEAN":           "BOOLEAN",
+	"BOX":               "BOX",
+	"BYTEA":             "BYTEA",
+	"CHARACTER":         "CHARACTER",
+	"CHARACTER VARYING": "CHARACTER VARYING",
+	"CIDR":              "CIDR",
+	"CIRCLE":            "CIRCLE",
+	"DATE":              "DATE",
+	"DOUBLE PRECISION":  "DOUBLE PRECISION",
+	"INET":              "INET",
+	"INTEGER":           "INTEGER",
+	"JSON":              "JSON",
+	"LINE":              "LINE",
+	"LSEG":              "LSEG",
+	"MACADDR":           "MACADDR",
+	"MONEY":             "MONEY",
+	"NUMERIC":           "NUMERIC",
+	"PATH":              "PATH",
+	"POINT":             "POINT",
+	"POLYGON":           "POLYGON",
+	"REAL":              "REAL",
+	"SMALLINT":          "SMALLINT",
+	"SMALLSERIAL":       "SMALLSERIAL",
+	"SERIAL":            "SERIAL",
+	"TEXT":              "TEXT",
+	"TSQUERY":           "TSQUERY",
+	"TSVECTOR":          "TSVECTOR",
+	"TXID_SNAPSHOT":     "TXID_SNAPSHOT",
+	"UUID":              "UUID",
+	"XML":               "XML",
+	"VARBIT":            "VARBIT",
+	"BOOL":              "BOOL",
+	"CHAR":              "CHAR",
+	"VARCHAR":           "VARCHAR",
+	"INT":               "INT",
+	"DECIMAL":           "DECIMAL",
+	"TIMETZ":            "TIMETZ",
+	"TIMESTAMPTZ":       "TIMESTAMPTZ",
+}
+
+func init() {
+	ListSuppDataTypes["PostgreSQL"] = PostgreSQLSupportedDataTypes
+	// ListSuppDataTypes["Postgres"] = PostgreSQLSupportedDataTypes
+}
+
+// // ListOfSupportedDataTypes return the supported List of DataTypes.
+// func (s PostgresStruct) ListOfSupportedDataTypes() (sdt map[string]string) {
+// 	return PostgreSQLSupportedDataTypes
+// }
+
 // Init is called to initiate the connection to check and do some activities
 func (s PostgresStruct) Init(c Config) {
 	// This can be useful to check for version and any other dependencies etc.,
@@ -24,7 +81,7 @@ func (s PostgresStruct) Init(c Config) {
 	if c.DbPort == "" {
 		c.DbPort = "5432"
 	}
- 	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
+	Db, err = sql.Open("postgres", "postgres://"+c.DbUsername+":"+c.DbPassword+"@"+c.DbHostname+"/"+c.DbName+"?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -167,13 +224,11 @@ func (s PostgresStruct) checkMigrationExecutedForID(id string) bool {
 }
 
 func (s PostgresStruct) dataTypeConversion(dt string) string {
-	switch dt {
-	case "string":
-		return "VARCHAR(255)"
-	case "int":
-		return "INTEGER"
+	if PostgreSQLSupportedDataTypes[dt] == "" {
+		fmt.Println("UnSupported DataType")
+		os.Exit(1)
 	}
-	return dt
+	return PostgreSQLSupportedDataTypes[dt]
 }
 
 func (s PostgresStruct) directSQL(query string) {
@@ -223,9 +278,8 @@ func (s PostgresStruct) dropIndex(tableName string, indexType string, field []st
 	tmpIndexName = strings.Trim(strings.Replace(strings.Replace(strings.ToLower(tmpIndexName), s.bTQ+"", "", -1), " ", "", -1), "_")
 	if indexType != "" {
 		return "ALTER TABLE " + tableName + " DROP " + strings.ToUpper(indexType)
-	} else {
-		return "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 	}
+	return "ALTER TABLE " + tableName + " DROP INDEX " + tmpIndexName
 }
 
 func (s PostgresStruct) renameTable(oldTableName string, newTableName string) string {
