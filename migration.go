@@ -40,34 +40,34 @@ type UpDown struct {
 
 // AddColumn structre ... #TODO(kishorevaishnav): need to write some proper comment
 type AddColumn struct {
-	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
-	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string   `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Column `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 // AddIndex structre ... #TODO(kishorevaishnav): need to write some proper comment
 type AddIndex struct {
-	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
-	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
-	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string   `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	IndexType string   `xml:"indexType,omitempty" json:"indexType,omitempty"`
+	Columns   []Column `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 // CreateTable structre ... #TODO(kishorevaishnav): need to write some proper comment
 type CreateTable struct {
-	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
-	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string   `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Column `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 // DropColumn structre ... #TODO(kishorevaishnav): need to write some proper comment
 type DropColumn struct {
-	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
-	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string   `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	Columns   []Column `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 // DropIndex structre ... #TODO(kishorevaishnav): need to write some proper comment
 type DropIndex struct {
-	TableName string    `xml:"tableName,omitempty" json:"tableName,omitempty"`
-	IndexType string    `xml:"indexType,omitempty" json:"indexType,omitempty"`
-	Columns   []Columns `xml:"columns,omitempty" json:"columns,omitempty"`
+	TableName string   `xml:"tableName,omitempty" json:"tableName,omitempty"`
+	IndexType string   `xml:"indexType,omitempty" json:"indexType,omitempty"`
+	Columns   []Column `xml:"columns,omitempty" json:"columns,omitempty"`
 }
 
 // DropTable structre ... #TODO(kishorevaishnav): need to write some proper comment
@@ -82,7 +82,7 @@ type RenameTable struct {
 }
 
 // Columns structre ... #TODO(kishorevaishnav): need to write some proper comment
-type Columns struct {
+type Column struct {
 	FieldName string `xml:"fieldname,omitempty" json:"fieldname,omitempty"`
 	DataType  string `xml:"datatype,omitempty" json:"datatype,omitempty"`
 }

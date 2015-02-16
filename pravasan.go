@@ -290,7 +290,7 @@ func fnSql(mig *Migration) {
 	mig.Down.Sql = strings.TrimSpace(localSql)
 }
 
-func fieldAndDataType(fieldArray []string, valArray []string) ([]Columns, error) {
+func fieldAndDataType(fieldArray []string, valArray []string) ([]Column, error) {
 
 	// #TODO(kishorevaishnav): Listed MySQL datatypes need to check and
 	// add for other Databases like PostgreSQL, SQLite3, Oracle, etc.,
@@ -333,14 +333,14 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Columns, error)
 	for _, v := range valArray {
 		validate[v] = true
 	}
-	refinedColumns := make([]Columns, len(fieldArray))
+	refinedColumns := make([]Column, len(fieldArray))
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			lfn, ldt, size := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][3], " ")
 			if datatypes[ldt] {
-				refinedColumns[key] = Columns{FieldName: lfn, DataType: ldt + size}
+				refinedColumns[key] = Column{FieldName: lfn, DataType: ldt + size}
 			} else {
 				return nil, errors.New("May be wrong datatype provided : \"" + fieldArray[key] + "\".")
 			}
@@ -349,7 +349,7 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Columns, error)
 			if validate["fieldname"] {
 				return nil, errors.New("Either fieldname or datatype provided is wrong : \"" + fieldArray[key] + "\".")
 			}
-			refinedColumns[key] = Columns{FieldName: fieldArray[key]}
+			refinedColumns[key] = Column{FieldName: fieldArray[key]}
 		}
 	}
 	if info {
@@ -380,7 +380,7 @@ func fnAddIndex(mUp *UpDown, mDown *UpDown, tableName string, fieldArray []strin
 	di := DropIndex{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		col := Columns{}
+		col := Column{}
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
@@ -438,7 +438,7 @@ func fnCreateTable(mm *UpDown, tableName string, fieldArray []string) (err error
 				flag = false
 			}
 			if flag == true {
-				ct.Columns = append(ct.Columns, Columns{FieldName: autoFieldName, DataType: autoDataType})
+				ct.Columns = append(ct.Columns, Column{FieldName: autoFieldName, DataType: autoDataType})
 			}
 		}
 	}
@@ -457,7 +457,7 @@ func fnDropColumn(mm *UpDown, tableName string, fieldArray []string) {
 	dc := DropColumn{TableName: tableName}
 	for key, value := range fieldArray {
 		fieldArray[key] = strings.Trim(value, ", ")
-		col := Columns{}
+		col := Column{}
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
 			col.FieldName = split[0][1]
