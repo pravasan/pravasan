@@ -26,7 +26,7 @@ const (
 	layout         = "20060102150405"
 
 	// FieldDataTypeRegexp contains Regular Expression to split field name & field data type.
-	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15})(\(\d+\)){0,1}$`
+	FieldDataTypeRegexp = `^([A-Za-z_0-9$]{2,15}):([A-Za-z]{2,15}([0-9]){0,2})(\(\d+\)){0,1}$`
 	infoText            = "\033[97m[\033[0;36mINFO\033[97m] "
 	resetText           = "\033[0m"
 	runningText         = "\033[97m[\033[33mRUNNING\033[97m] "
@@ -329,7 +329,7 @@ func fieldAndDataType(fieldArray []string, valArray []string) ([]Column, error) 
 		fieldArray[key] = strings.Trim(value, ", ")
 		if r, _ := regexp.Compile(FieldDataTypeRegexp); r.MatchString(fieldArray[key]) == true {
 			split := r.FindAllStringSubmatch(fieldArray[key], -1)
-			lfn, ldt, lsize := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][3], " ")
+			lfn, ldt, lsize := split[0][1], strings.Trim(split[0][2], " "), strings.Trim(split[0][4], " ")
 			if datatypes[strings.ToUpper(ldt)] {
 				refinedColumns[key] = Column{FieldName: lfn, DataType: ldt + lsize}
 			} else {
