@@ -60,6 +60,12 @@ var PostgreSQLSupportedDataTypes = map[string]string{
 	"DECIMAL":       "DECIMAL",
 	"TIMETZ":        "TIMETZ",
 	"TIMESTAMPTZ":   "TIMESTAMPTZ",
+	"INT":           "INTEGER",      // Alias of INTEGER
+	"DEC":           "DECIMAL",      // Alias of DECIMAL
+	"NUMERIC":       "DECIMAL",      // Alias of DECIMAL
+	"FIXED":         "DECIMAL",      // Alias of DECIMAL
+	"BOOL":          "BOOLEAN",      // Alias of BOOLEAN
+	"STRING":        "VARCHAR(255)", // Alias of VARCHAR
 }
 
 func init() {
