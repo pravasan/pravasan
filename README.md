@@ -2,7 +2,6 @@
 Simple Migration tool intend to be used for any languages, for any db.
 
 [![Build Status](https://travis-ci.org/pravasan/pravasan.svg?branch=master)](https://travis-ci.org/pravasan/pravasan)
-[![Build Status](https://drone.io/github.com/pravasan/pravasan/status.png)](https://drone.io/github.com/pravasan/pravasan/latest)
 
 *Please feel free to criticize, comment, etc.*
 *Currently this is working for MySQL, PostgreSQL.* Soon will be available for other Databases too.
