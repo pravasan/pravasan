@@ -1,13 +1,12 @@
-#Pravasan
+# Pravasan
 Simple Migration tool intend to be used for any languages, for any db.
 
 [![Build Status](https://travis-ci.org/pravasan/pravasan.svg?branch=master)](https://travis-ci.org/pravasan/pravasan)
-[![Build Status](https://drone.io/github.com/pravasan/pravasan/status.png)](https://drone.io/github.com/pravasan/pravasan/latest)
 
 *Please feel free to criticize, comment, etc.*
 *Currently this is working for MySQL, PostgreSQL.* Soon will be available for other Databases too.
 
-##Definition in Hindi
+## Definition in Hindi
 ----
 प्रवसन {pravasan} = MIGRATION(Noun)
 
@@ -17,7 +16,7 @@ Simple Migration tool intend to be used for any languages, for any db.
 * [All Features / Bugs](#all-features--bugs)
 * [Details](#details)
 
-##Install
+## Install
 
 1. Choose proper OS & Download from http://pravasan.github.io/pravasan/#download
 2. Unzip / Untar the file downloaded 
@@ -25,12 +24,12 @@ Simple Migration tool intend to be used for any languages, for any db.
 ```chmod +x pravasan_*```
 4. Look at the below Usage and start using it from the folder where you would like to execute & store migration files.
 
-##Usage
+## Usage
 
-###Syntax
+### Syntax
 ```pravasan [<flags>] <action> <sub-action> [data input]```
 
-###Flags
+### Flags
 ```
 Usage of pravasan:
   -autoAddColumns="": Add default columns when table is created
@@ -83,17 +82,17 @@ If you like not to store the credentials in file then use it like this
 pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 up 20150103174227
 ```
 
-##Work in progress are:
+## Work in progress are:
 - [ ] Support for Oracle, MongoDB, etc.,
 
-##High Level Features
+## High Level Features
 - [x] Create & read from Conf file (XML / JSON)
 - [x] Output in XML, JSON format
 - [x] Support for Direct SQL Statements 
 - [x] Support for MySQL, Postgres
 - Temporarily SQLite3 is stopped - due to compile issue.
 
-##All Features / Bugs
+## All Features / Bugs
 - [x] [v0.1](https://github.com/pravasan/pravasan/milestones/v0.1)
 - [x] [v0.2](https://github.com/pravasan/pravasan/milestones/v0.2)
 - [x] [v0.3](https://github.com/pravasan/pravasan/milestones/v0.3)
@@ -101,10 +100,10 @@ pravasan -u=root -p -dbType=postgres -d=testdb -h=localhost -port=5433 up 201501
 - [ ] [v1.0](https://github.com/pravasan/pravasan/milestones/v1.0)
 - [ ] [v2.0](https://github.com/pravasan/pravasan/milestones/v2.0)
 
-####Few Other Notes: 
+#### Few Other Notes: 
 * moved from https://github.com/kishorevaishnav/godbmig
 
-##Details
+## Details
 
 ### Add few columns by default during creation of a table.
 ```
